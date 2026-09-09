@@ -104,6 +104,24 @@
     .hero-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
+  /* ---- "Your research team" strip ---- */
+  .team-section { margin: 44px 0 0; }
+  .team-heading { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim-2); margin: 0 0 16px; }
+  .team-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; max-width: 640px; margin: 0 auto; }
+  .team-chip {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px;
+    background: var(--panel); border: 1px solid var(--border-soft); border-radius: 30px;
+    font-size: 12px; font-weight: 650; color: var(--text);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .team-chip:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -12px rgba(90,70,30,0.3); }
+  .team-chip .avatar {
+    width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0;
+    background: linear-gradient(160deg, var(--accent-2), var(--navy) 130%);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 10px;
+  }
+
   /* ---- Brand ---- */
   .brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 44px; }
   .brand .mark {
@@ -253,7 +271,22 @@
     <div class="hero-card reveal" style="animation-delay:260ms"><div class="ic">◇</div><div class="t">Next-best actions</div><div class="d">Deterministic checks surface what actually matters, ranked.</div></div>
     <div class="hero-card reveal" style="animation-delay:300ms"><div class="ic">🔒</div><div class="t">You're always in control</div><div class="d">Read-only access. Nothing trades or moves money without you.</div></div>
   </div>
-  <p class="pricing-note reveal" style="animation-delay:330ms">$29/month · 7-day free trial · cancel anytime</p>
+  <div class="team-section reveal" style="animation-delay:340ms">
+    <p class="team-heading">A full research desk, not a chatbot</p>
+    <div class="team-row">
+      <div class="team-chip"><span class="avatar">ER</span> Equity Research</div>
+      <div class="team-chip"><span class="avatar">NC</span> News &amp; Catalysts</div>
+      <div class="team-chip"><span class="avatar">SD</span> Sentiment</div>
+      <div class="team-chip"><span class="avatar">TS</span> Technicals</div>
+      <div class="team-chip"><span class="avatar">PS</span> Portfolio Strategy</div>
+      <div class="team-chip"><span class="avatar">RO</span> Risk</div>
+      <div class="team-chip"><span class="avatar">TX</span> Tax</div>
+      <div class="team-chip"><span class="avatar">TD</span> Trade Ideas</div>
+      <div class="team-chip"><span class="avatar">OS</span> Options</div>
+      <div class="team-chip"><span class="avatar">MS</span> Market</div>
+    </div>
+  </div>
+  <p class="pricing-note reveal" style="animation-delay:380ms">$29/month · 7-day free trial · cancel anytime</p>
 </div>
 
 <div class="shell reveal" style="animation-delay:340ms">
