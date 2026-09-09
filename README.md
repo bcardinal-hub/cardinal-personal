@@ -1,102 +1,145 @@
-# Cardinal Personal — self-directed financial copilot
+# Cardinal Personal — the research desk for people who manage their own money
 
-A personal-use version of the Cardinal Financial AI architecture: you (and, later,
-friends) connect your own real Schwab account read-only, and four analyst agents
-plus a planning/opportunity layer help you understand your own money. **This app
-never places trades.** You always execute in Schwab yourself — this is a research
-and organization tool, not a trading bot.
+A subscription ($29/mo, 7-day free trial) self-directed financial copilot: connect
+your real accounts (any bank/brokerage via Plaid, or Schwab directly), and a
+10-role research desk — modeled on a real advisory firm's org chart, not a
+single chatbot — analyzes your actual holdings. **This app never places a
+trade.** Every order is placed by the person themselves, in their own broker.
+It's a research and decision-support tool, positioned as an alternative to
+paying a human financial advisor for routine portfolio oversight — not a
+replacement for licensed investment advice.
 
-## The one decision to make first: Individual vs. Commercial Schwab access
+Live at [cardinal-personal.onrender.com](https://cardinal-personal.onrender.com).
 
-Schwab's Trader API has two tiers, and this determines how you deploy:
+## The desk
 
-- **Individual access** (free, no review): an app can connect *only the Schwab
-  account of the person who registered the developer app*. No approval process.
-- **Commercial access** (requires Schwab's review): required the moment your app
-  connects *someone else's* Schwab account through your instance of it.
+Ten specialist roles, each its own Claude call with its own lens (see
+`lib/claude.js` `AGENTS`, `lib/tradeIdeas.js`, `lib/optionsIdeas.js`):
 
-**Recommended path:** start with Individual access. That means each person who
-wants to use this (you, then each friend) registers their own free Schwab
-developer app and runs their own instance, connected only to their own account.
-Same code, multiple self-contained deployments — no approval process, usable
-today.
+| Role | What it does |
+|---|---|
+| Head of Equity Research | Fundamentals — earnings, margins, valuation |
+| News & Catalyst Desk | Real news flow on what you hold |
+| Sentiment Desk | Whether sentiment looks stretched |
+| Technical Strategist | Price action vs. range/benchmarks |
+| Chief Portfolio Strategist | Concentration, diversification, cash |
+| Chief Risk Officer | Correlated bets, position-size red flags |
+| Tax Strategist | Loss harvesting, wash-sale, holding-period timing |
+| Trade Ideas Desk | Scans holdings + live market for setups worth a look |
+| Options Strategist | Strategy-level options ideas (no fabricated strikes/premiums) |
+| Market Strategist | Daily market-wide tape roundup |
 
-If you later want one shared login where everyone connects through a single
-hosted app, that requires applying for Schwab's Commercial approval — budget
-real time for that review, and keep the "AI analyzes, human places every order"
-framing consistent everywhere the app is described, since that's exactly what
-the review is checking for.
+Every agent is instructed never to invent a figure it doesn't have — search-
+enabled agents ground claims in real web search results; reasoning-only
+agents (Portfolio Strategist, Risk, Tax) work strictly from the synced
+position list. The AI Assistant chat is the "concierge" for the desk: it
+reads the last 10 recommendations from any specialist so it can build on
+what the team already found instead of contradicting it.
+
+Recommendations and Opportunities are tagged `source: 'deterministic'` (pure
+math — tax-loss detection, RMD checks, insurance gaps) vs `source: 'ai'`
+(a model's judgment call) everywhere in the schema and UI — the two are
+never blurred together.
+
+## Product surfaces
+
+- **Positions** — synced holdings, allocation, P/L (read-only)
+- **Terminal** — dark, trading-floor-style live view: scrolling ticker tape,
+  live watchlist, real news wire, your book, and the desk's live findings
+  (Desk Signals), all in one screen
+- **Market** — live quotes (Finnhub) + AI daily snapshot
+- **News** — real headlines, general + per-holding, never AI-paraphrased
+- **AI Assistant** — chat, grounded in your holdings + the desk's findings
+- **Recommendations** — the 7 analysis agents' output, with a "meet the
+  desk" roster panel
+- **Opportunities** — deterministic checks + AI trade ideas + a separate,
+  explicitly-gated options-ideas scan
+- **Billing** — Stripe Checkout/Portal, self-serve subscribe/cancel
+- **Clients** (Advisor section) — optional household/multi-client management
+  for someone using this as a practice tool rather than for themselves
 
 ## Architecture
 
 ```
-Browser (your UI)
-   │  your own login (email/password or magic link)
-   ▼
-Backend (Node/Express, this scaffold)
-   │  holds Schwab OAuth tokens server-side — NEVER in browser code
-   │  calls Claude API server-side for analysis (API key never exposed client-side)
-   ▼
-Postgres (accounts, holdings, opportunities, recommendations, audit log)
+Browser (PWA — installable, public/*.html + manifest.json + sw.js)
    │
    ▼
-Schwab Trader API (read-only account/position data)
+Node/Express (server.js, ESM, express-async-errors so no route can crash
+   │            the process; global error handler + unhandledRejection
+   │            catch as defense-in-depth)
+   │  Postgres-backed sessions (connect-pg-simple, 30-day rolling)
+   │  AES-256-GCM at rest for Schwab/Plaid tokens (lib/crypto.js)
+   ▼
+Postgres (Neon) — users, holdings, recommendations, opportunities,
+   │               subscriptions, chat_messages, audit_log, households/
+   │               clients/accounts (advisor side)
+   ▼
+External APIs, all server-side only (keys never reach the browser):
+   - Anthropic (claude-sonnet-5, + web_search tool) — the desk
+   - Plaid — primary account-linking path, any bank/brokerage
+   - Schwab Trader API — direct OAuth, Individual-tier (own account only)
+   - Finnhub — real quotes + news, never LLM-generated
+   - Stripe — Checkout, Billing Portal, subscription webhooks
 ```
 
-## Setup
+Deploys via GitHub → Render (auto-deploy on push to `main`). Render's edge
+proxy terminates HTTPS in production (`trust proxy` + `NODE_ENV=production`
+detection in `server.js`); locally, a self-signed cert under `certs/`
+(gitignored) serves HTTPS because Schwab's OAuth callback requires it even
+on localhost.
 
-1. Generate a local self-signed HTTPS cert (Schwab's app-creation form
-   rejects plain `http://` callback URLs outright, even for localhost):
+## Cost controls
+
+Every AI-calling route that a user can trigger by hand (`/analysis/run`,
+`/opportunities/scan/*`, `/market/:kind/refresh`) is behind both
+`requireSubscription` (`lib/paywall.js`) and a DB-backed cooldown
+(`lib/cooldown.js`, 5–10 min depending on the route) — a flat-rate monthly
+product can't have an unbounded per-click Claude spend. The market snapshot
+cooldown matters more than the per-user ones: those snapshots are shared
+instance-wide, so one person mashing Refresh would spend every subscriber's
+shared budget.
+
+## Local setup
+
+1. `npm install`
+2. Generate a local self-signed HTTPS cert (Schwab's OAuth callback rejects
+   plain `http://`, even for localhost):
    ```
    mkdir -p certs
    openssl req -x509 -newkey rsa:2048 -keyout certs/key.pem -out certs/cert.pem -days 825 -nodes \
      -subj "/CN=127.0.0.1" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
    ```
-   `server.js` auto-detects `certs/*.pem` and serves HTTPS when present. Your
-   browser will show a one-time "not secure" warning for the self-signed
-   cert on first visit — that's expected, click through it.
-2. **Schwab Developer Portal** (developer.schwab.com): create a Developer
-   account, register an app, request the "Accounts and Trading Production"
-   product, set an order limit of `0` (this app never places orders), and set
-   the callback URL to `https://127.0.0.1:3000/schwab/callback` for local dev
-   — this must exactly match `SCHWAB_CALLBACK_URL` below and the route the
-   app actually serves. Approval for Individual access is typically fast.
-3. Copy `.env.example` to `.env` and fill in:
-   - `SCHWAB_CLIENT_ID` / `SCHWAB_CLIENT_SECRET` (from the developer portal)
-   - `SCHWAB_CALLBACK_URL` (`https://127.0.0.1:3000/schwab/callback`)
-   - `ANTHROPIC_API_KEY` (from console.anthropic.com — server-side only)
-   - `DATABASE_URL` (a free Postgres instance from Supabase, Neon, or Railway
-     works fine for personal use)
-   - `SESSION_SECRET` (any long random string)
-   - `TOKEN_ENCRYPTION_KEY` (32-byte hex string — see the comment in
-     `.env.example` for the one-liner to generate it; this encrypts stored
-     Schwab tokens at rest)
-4. `npm install`
-5. Run `db/schema.sql` against your Postgres instance to create tables.
-6. `npm run dev` and visit `https://127.0.0.1:3000`.
-7. Create an account, click "Connect Schwab," authorize with your real Schwab
-   credentials (you'll be redirected to Schwab's real login — this app never
-   sees your Schwab password), sync your positions, and you'll land in the
-   dashboard (Positions / Market / News / AI Assistant / Recommendations).
+   `server.js` auto-detects `certs/*.pem` and serves HTTPS when present —
+   click through the one-time browser "not secure" warning.
+3. Copy `.env.example` to `.env` and fill in every key: Plaid (sandbox is
+   free, instant), Schwab (Individual-tier developer app — free, no review,
+   only ever authorizes the account that registered it), Anthropic, Finnhub,
+   Stripe (test mode), a free Postgres instance (Neon), and generate
+   `SESSION_SECRET` / `TOKEN_ENCRYPTION_KEY` (see the comment in
+   `.env.example`).
+4. Run `db/schema.sql` against your Postgres instance.
+5. `npm run dev` → `https://127.0.0.1:3000`.
 
-## What's scaffolded vs. what you'll build out
+## Schwab: Individual vs. Commercial access
 
-This gives you the real shape: OAuth flow, token storage, a positions-sync
-endpoint, and a wired-up call to the four-agent analysis pattern from the
-Stock Research Copilot, adapted to analyze *your actual holdings* instead of
-an arbitrary ticker. The dashboard UI itself (the part built earlier as the
-Cardinal prototype) can be dropped in on top of these API routes — it's
-already shaped to expect this data.
+Schwab's Trader API has two tiers. **Individual** (free, no review) only
+ever authorizes the Schwab account of whoever registered the developer app
+— which is why Plaid, not Schwab, is the primary connection path for real
+subscribers (anyone can link any bank/brokerage through it). Schwab stays
+available as a secondary option for someone who registers their own
+Individual developer app. **Commercial** access (Schwab's own review) would
+only be needed to let *other people* connect *their* Schwab accounts
+directly through this app's own Schwab credentials — not currently pursued.
 
-Things intentionally left as TODOs for you to fill in as you go: refresh-token
-rotation on a schedule (Schwab access tokens expire in 30 minutes), per-user
-encryption-at-rest for stored tokens, and the actual frontend wiring. None of
-these are exotic — they're just the next concrete steps once the skeleton
-runs.
+## The line this product doesn't cross
 
-## The line this project doesn't cross
+No route places, modifies, sizes, or cancels an order — not for equities,
+not for options. Every agent's system prompt explicitly forbids implying a
+trade should happen automatically. The person reviews every recommendation
+and executes every order themselves, in their own broker. This is deliberate
+product design, not a missing feature.
 
-No route in this scaffold submits an order, and none should be added without
-you deciding that deliberately and separately — that's not a technical
-limitation, it's the actual design intent: you and your friends stay the ones
-making every decision and every trade.
+**Not yet done, flagged deliberately:** actual legal/compliance review
+before this ever takes real (non-test-mode) payment from the public, given
+that charging strangers for portfolio analysis touches Investment Adviser
+Act considerations that need a real look before broad marketing.
