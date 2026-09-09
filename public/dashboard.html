@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cardinal Personal — Dashboard</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon.svg" />
+<meta name="theme-color" content="#0a0b0e" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #08090b;
+    --panel: #101216;
+    --panel-2: #16181d;
+    --panel-3: #1c1f26;
+    --border: #232630;
+    --border-soft: #1a1c22;
+    --text: #f2f3f5;
+    --dim: #8b8f99;
+    --dim-2: #5c6068;
+    --accent: #e0343f;
+    --accent-2: #ff5a63;
+    --accent-glow: rgba(224, 52, 63, 0.28);
+    --green: #34d399;
+    --gold: #d4af37;
+    --sidebar-w: 232px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ---- Sidebar ---- */
+  .sidebar {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: linear-gradient(180deg, #0c0d10, #08090b);
+    border-right: 1px solid var(--border-soft);
+    display: flex; flex-direction: column;
+    padding: 22px 14px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 26px; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(160deg, var(--accent-2), #8f1116 85%);
+    box-shadow: 0 6px 20px var(--accent-glow);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .brand .name { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .brand .sub { font-size: 10px; color: var(--dim-2); margin-top: 1px; }
+
+  nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px 12px; border-radius: 9px; cursor: pointer;
+    color: var(--dim); font-size: 13px; font-weight: 560;
+    transition: background .15s, color .15s;
+    user-select: none;
+  }
+  .nav-item .ic { width: 17px; text-align: center; font-size: 14px; }
+  .nav-item:hover { background: var(--panel-2); color: var(--text); }
+  .nav-item.active { background: var(--panel-3); color: #fff; box-shadow: inset 2px 0 0 var(--accent); }
+  .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim-2); padding: 16px 12px 6px; }
+  .nav-item:first-child, .nav-section:first-child + .nav-item { margin-top: 0; }
+  .nav-foot { border-top: 1px solid var(--border-soft); padding-top: 12px; margin-top: 8px; }
+  .nav-foot .nav-item { color: var(--dim-2); font-size: 12px; }
+
+  /* ---- Main ---- */
+  main { flex: 1; min-width: 0; padding: 28px 36px 60px; max-width: 980px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .topbar h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .topbar .subtitle { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 16px; font-size: 13px; font-weight: 620; font-family: inherit;
+    border-radius: 9px; border: none; cursor: pointer; text-decoration: none;
+    transition: transform .1s, filter .15s;
+    background: linear-gradient(160deg, var(--accent-2), var(--accent) 70%);
+    color: #fff; box-shadow: 0 8px 20px -8px var(--accent-glow);
+  }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: default; filter: none; }
+  .btn.secondary { background: var(--panel-2); box-shadow: none; border: 1px solid var(--border); color: var(--text); }
+  .btn.secondary:hover { border-color: #33373f; }
+  .spinner { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: spin .7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Stat row ---- */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 18px 20px;
+  }
+  .stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--dim-2); margin-bottom: 8px; font-weight: 650; }
+  .stat-value { font-size: 22px; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: 11px; color: var(--dim-2); margin-top: 4px; font-weight: 600; }
+  .stat-value.up, .stat-sub.up { color: var(--green); }
+  .stat-value.down, .stat-sub.down { color: var(--accent-2); }
+  td.num.up { color: var(--green); }
+  td.num.down { color: var(--accent-2); }
+
+  /* ---- Allocation bar ---- */
+  .allocation { margin-bottom: 20px; }
+  .allocation-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--panel-2); }
+  .allocation-seg { height: 100%; transition: filter .15s; }
+  .allocation-seg:hover { filter: brightness(1.25); }
+  .allocation-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  .allocation-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .allocation-swatch { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ---- Cards / panels ---- */
+  .panel {
+    background: linear-gradient(180deg, var(--panel), #0d0f13);
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 26px; margin-bottom: 16px;
+  }
+  .panel .empty { color: var(--dim); font-size: 13px; padding: 10px 0; }
+  .meta-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .meta-row .ts { font-size: 11.5px; color: var(--dim-2); }
+  .snapshot-text { font-size: 14px; line-height: 1.75; color: #dcdde1; white-space: pre-wrap; }
+
+  /* ---- Table ---- */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim-2); font-weight: 650; padding: 0 12px 10px; }
+  th.num, td.num { text-align: right; }
+  td { padding: 13px 12px; border-top: 1px solid var(--border-soft); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  tr:hover td { background: var(--panel-2); }
+  .ticker { font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; }
+
+  /* ---- Recommendations ---- */
+  .rec-card { background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; }
+  .rec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .rec-agent { font-size: 12.5px; font-weight: 700; }
+  .rec-time { font-size: 10.5px; color: var(--dim-2); margin-left: 8px; font-weight: 500; }
+  .pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 9px; border-radius: 20px; }
+  .pill.high { background: rgba(52,211,153,0.15); color: var(--green); }
+  .pill.medium { background: rgba(212,175,55,0.15); color: var(--gold); }
+  .pill.low { background: rgba(139,143,153,0.15); color: var(--dim); }
+  .pill.priority-high { background: rgba(224,52,63,0.15); color: var(--accent-2); }
+  .pill.priority-medium { background: rgba(212,175,55,0.15); color: var(--gold); }
+  .pill.priority-low { background: rgba(139,143,153,0.15); color: var(--dim); }
+  .opp-badges { display: flex; gap: 6px; align-items: center; }
+  .opp-impact { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+  .opp-impact.negative { color: var(--accent-2); }
+  .opp-impact.positive { color: var(--green); }
+  .opp-next-step {
+    font-size: 12px; color: var(--dim); background: var(--panel-3); border-radius: 8px;
+    padding: 10px 12px; margin: 10px 0 12px; border-left: 2px solid var(--accent);
+  }
+  .specialist-flag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--gold); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .rec-summary { font-size: 13px; color: var(--dim); line-height: 1.6; margin-bottom: 12px; }
+  .rec-actions { display: flex; gap: 8px; }
+  .rec-btn {
+    font-size: 11.5px; font-weight: 650; font-family: inherit; padding: 6px 13px;
+    border-radius: 7px; border: 1px solid var(--border); background: var(--panel-3);
+    color: var(--dim); cursor: pointer; transition: all .15s;
+  }
+  .rec-btn:hover { color: var(--text); border-color: #3a3f47; }
+  .rec-btn.approve:hover { color: var(--green); border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.08); }
+  .rec-btn.reject:hover { color: var(--accent-2); border-color: rgba(224,52,63,0.4); background: rgba(224,52,63,0.08); }
+  .rec-btn:disabled { opacity: 0.4; cursor: default; }
+  .status-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 20px;
+  }
+  .status-badge.approved { background: rgba(52,211,153,0.15); color: var(--green); }
+  .status-badge.rejected { background: rgba(224,52,63,0.15); color: var(--accent-2); }
+  .status-badge.edited { background: rgba(212,175,55,0.15); color: var(--gold); }
+
+  /* ---- Filter chips ---- */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .filter-chip {
+    font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 20px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--dim);
+    cursor: pointer; user-select: none; transition: all .15s;
+  }
+  .filter-chip:hover { color: var(--text); }
+  .filter-chip.active { background: var(--panel-3); color: #fff; border-color: #3a3f47; }
+
+  /* ---- Toasts ---- */
+  .toast-stack {
+    position: fixed; bottom: 24px; right: 24px; z-index: 50;
+    display: flex; flex-direction: column; gap: 10px; max-width: 340px;
+  }
+  .toast {
+    background: var(--panel-3); border: 1px solid var(--border); border-radius: 11px;
+    padding: 13px 16px; font-size: 13px; box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6);
+    animation: toast-in .25s cubic-bezier(.16,1,.3,1);
+  }
+  .toast.error { border-color: rgba(224,52,63,0.4); color: #ff9299; }
+  .toast.success { border-color: rgba(52,211,153,0.35); color: #7fe8bf; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- Chat ---- */
+  .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 180px); }
+  .chat-log { flex: 1; overflow-y: auto; padding: 4px 2px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .bubble { max-width: 78%; padding: 12px 15px; border-radius: 14px; font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; }
+  .bubble.user { align-self: flex-end; background: linear-gradient(160deg, var(--accent-2), var(--accent) 75%); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble.assistant { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border-soft); border-bottom-left-radius: 4px; }
+  .chat-input-row { display: flex; gap: 10px; margin-top: 12px; }
+  .chat-input-row input {
+    flex: 1; padding: 13px 16px; font-size: 13.5px; font-family: inherit;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); outline: none;
+  }
+  .chat-input-row input:focus { border-color: var(--accent); }
+  .chat-empty { color: var(--dim); font-size: 13px; text-align: center; margin-top: 40px; }
+
+  .safety-note {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+    padding: 11px 14px; background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.2);
+    border-radius: 10px; font-size: 11.5px; color: #d9c88a;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---- Forms (households/clients/accounts) ---- */
+  .field-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .field-row.inline { align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+  .field label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim-2); font-weight: 650; }
+  .field input, .field select, .field textarea {
+    padding: 10px 12px; font-size: 13px; font-family: inherit;
+    background: #0a0b0e; border: 1px solid var(--border); border-radius: 9px; color: var(--text); outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .add-toggle {
+    font-size: 12.5px; font-weight: 650; color: var(--accent-2); cursor: pointer; user-select: none;
+    display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px;
+  }
+  .add-toggle:hover { color: #fff; }
+  .add-form { display: none; margin: 8px 0 18px; padding: 16px; background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 12px; }
+  .add-form.open { display: block; }
+
+  /* ---- Household cards (list view) ---- */
+  .household-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .household-card {
+    background: linear-gradient(180deg, var(--panel), #0d0f13); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 22px; cursor: pointer; transition: border-color .15s, transform .1s;
+  }
+  .household-card:hover { border-color: #3a3f47; transform: translateY(-1px); }
+  .household-card .hh-name { font-size: 15.5px; font-weight: 700; margin-bottom: 3px; }
+  .household-card .hh-members { font-size: 12px; color: var(--dim-2); margin-bottom: 16px; }
+  .household-card .hh-nw-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim-2); font-weight: 650; }
+  .household-card .hh-nw { font-size: 20px; font-weight: 750; margin-top: 4px; }
+
+  /* ---- Detail rows (clients / accounts / goals / cash flow) ---- */
+  .detail-section { margin-bottom: 28px; }
+  .detail-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .detail-section-head h3 { font-size: 14px; font-weight: 700; margin: 0; }
+  .list-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 16px; background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 8px;
+  }
+  .list-row .lr-main { font-size: 13.5px; font-weight: 600; }
+  .list-row .lr-sub { font-size: 11.5px; color: var(--dim-2); margin-top: 2px; }
+  .list-row .lr-value { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .list-row .lr-value.liability { color: var(--accent-2); }
+  .list-row .lr-actions { display: flex; gap: 6px; margin-left: 12px; }
+  .icon-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--dim);
+    width: 26px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { color: #fff; border-color: #3a3f47; }
+  .back-link { font-size: 12.5px; color: var(--dim); cursor: pointer; margin-bottom: 16px; display: inline-block; }
+  .back-link:hover { color: var(--text); }
+  .relationship-tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
+    background: var(--panel-3); color: var(--dim); margin-left: 8px;
+  }
+</style>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="mark">🐦</div>
+    <div>
+      <div class="name">Cardinal</div>
+      <div class="sub">Personal</div>
+    </div>
+  </div>
+  <nav id="nav">
+    <div class="nav-section">My Portfolio</div>
+    <div class="nav-item" data-tab="positions"><span class="ic">◆</span> Positions</div>
+    <div class="nav-item" data-tab="market"><span class="ic">▲</span> Market</div>
+    <div class="nav-item" data-tab="news"><span class="ic">▤</span> News</div>
+    <div class="nav-item" data-tab="assistant"><span class="ic">✦</span> AI Assistant</div>
+    <div class="nav-item" data-tab="recommendations"><span class="ic">●</span> Recommendations</div>
+    <div class="nav-item" data-tab="opportunities"><span class="ic">◇</span> Opportunities</div>
+    <div class="nav-section">Advisor</div>
+    <div class="nav-item" data-tab="clients"><span class="ic">◈</span> Clients</div>
+  </nav>
+  <div class="nav-foot">
+    <div class="nav-item" id="signOutBtn"><span class="ic">↩</span> Sign out</div>
+  </div>
+</div>
+
+<main>
+  <!-- Positions -->
+  <section class="tab-panel" id="tab-positions">
+    <div class="topbar">
+      <div><h1>Positions</h1><div class="subtitle">Read-only, synced from every account you've connected.</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" id="connectPlaidBtn">+ Connect account</button>
+        <button class="btn" id="resyncBtn">Re-sync positions</button>
+      </div>
+    </div>
+    <div class="stats" id="posStats"></div>
+    <div class="panel allocation" id="allocationPanel" style="display:none">
+      <div class="stat-label" style="margin-bottom:12px">Allocation</div>
+      <div class="allocation-bar" id="allocationBar"></div>
+      <div class="allocation-legend" id="allocationLegend"></div>
+    </div>
+    <div class="panel">
+      <div id="posTableWrap"><p class="empty">Loading…</p></div>
+    </div>
+  </section>
+
+  <!-- Market -->
+  <section class="tab-panel" id="tab-market">
+    <div class="topbar">
+      <div><h1>Market</h1><div class="subtitle">Broad market tape — refreshed on demand, not live-streamed.</div></div>
+      <button class="btn" id="marketRefreshBtn">Refresh</button>
+    </div>
+    <div class="panel" id="marketPanel"><p class="empty">No snapshot yet — click Refresh.</p></div>
+  </section>
+
+  <!-- News -->
+  <section class="tab-panel" id="tab-news">
+    <div class="topbar">
+      <div><h1>News</h1><div class="subtitle">Market-moving headlines, not tied to your specific holdings.</div></div>
+      <button class="btn" id="newsRefreshBtn">Refresh</button>
+    </div>
+    <div class="panel" id="newsPanel"><p class="empty">No snapshot yet — click Refresh.</p></div>
+  </section>
+
+  <!-- AI Assistant -->
+  <section class="tab-panel" id="tab-assistant">
+    <div class="topbar">
+      <div><h1>AI Assistant</h1><div class="subtitle">Ask anything about your holdings or the market.</div></div>
+    </div>
+    <div class="chat-wrap">
+      <div class="chat-log" id="chatLog"><div class="chat-empty">Ask about your portfolio, a ticker, or what's moving markets today.</div></div>
+      <div class="chat-input-row">
+        <input id="chatInput" placeholder="Ask the assistant…" autocomplete="off" />
+        <button class="btn" id="chatSendBtn">Send</button>
+      </div>
+      <div class="safety-note">🔒 Advice only — the assistant can't place, size, or time a trade for you.</div>
+    </div>
+  </section>
+
+  <!-- Recommendations -->
+  <section class="tab-panel" id="tab-recommendations">
+    <div class="topbar">
+      <div><h1>Recommendations</h1><div class="subtitle">Five agents review your synced holdings. Nothing here acts automatically.</div></div>
+      <button class="btn" id="runAnalysisBtn">Run analysis</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-chip active" data-filter="pending">Pending review</span>
+      <span class="filter-chip" data-filter="all">All history</span>
+    </div>
+    <div id="recList"><p class="empty">No recommendations yet — click Run analysis.</p></div>
+  </section>
+
+  <!-- Opportunities (personal portfolio) -->
+  <section class="tab-panel" id="tab-opportunities">
+    <div class="topbar">
+      <div><h1>Opportunities</h1><div class="subtitle">Deterministic checks against your own synced holdings — no LLM guesses the numbers.</div></div>
+      <button class="btn" id="scanPersonalBtn">Scan for opportunities</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-chip active" data-oppfilter="pending">Pending review</span>
+      <span class="filter-chip" data-oppfilter="all">All history</span>
+    </div>
+    <div id="oppList"><p class="empty">No opportunities yet — click Scan.</p></div>
+  </section>
+
+  <!-- Clients -->
+  <section class="tab-panel" id="tab-clients">
+    <div id="clientsRoot"></div>
+  </section>
+</main>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+const fmt$ = n => n == null ? '—' : Number(n).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+const fmtNum = n => n == null ? '—' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 4 });
+const timeAgo = iso => {
+  if (!iso) return '';
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+};
+
+const loaded = new Set();
+
+function toast(message, kind = 'error') {
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = message;
+  stack.appendChild(el);
+  setTimeout(() => el.remove(), kind === 'error' ? 6000 : 3500);
+}
+
+function setBtnLoading(el, label) {
+  el.disabled = true;
+  el.dataset.original = el.innerHTML;
+  el.innerHTML = `<span class="spinner"></span> ${label}`;
+}
+function resetBtn(el) {
+  el.disabled = false;
+  if (el.dataset.original) el.innerHTML = el.dataset.original;
+}
+
+// ---- Tabs ----
+function activateTab(tab) {
+  document.querySelectorAll('.nav-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + tab));
+  history.replaceState({}, '', '#' + tab);
+  if (!loaded.has(tab)) {
+    loaded.add(tab);
+    if (tab === 'positions') loadPositions();
+    if (tab === 'market') loadSnapshot('overview', 'marketPanel');
+    if (tab === 'news') loadSnapshot('news', 'newsPanel');
+    if (tab === 'assistant') loadChat();
+    if (tab === 'recommendations') loadRecommendations();
+    if (tab === 'clients') renderHouseholdList();
+    if (tab === 'opportunities') loadPersonalOpportunities();
+  }
+}
+document.querySelectorAll('.nav-item[data-tab]').forEach(el => el.addEventListener('click', () => activateTab(el.dataset.tab)));
+document.getElementById('signOutBtn').addEventListener('click', async () => {
+  await fetch('/auth/logout', { method: 'POST' });
+  location.href = '/';
+});
+
+// ---- Positions ----
+const PALETTE = ['#e0343f', '#ff8a5c', '#d4af37', '#34d399', '#5b9bff', '#b57bff', '#ff5aa8', '#4ecdc4'];
+
+async function loadPositions() {
+  const r = await fetch('/schwab/holdings');
+  const rows = await r.json();
+  const total = rows.reduce((sum, h) => sum + (Number(h.market_value) || 0), 0);
+  const totalCost = rows.reduce((sum, h) => sum + (Number(h.cost_basis) || 0) * (Number(h.quantity) || 0), 0);
+  const gain = total - totalCost;
+  const todayChange = rows.reduce((sum, h) => sum + (Number(h.day_change) || 0), 0);
+  const hasTodayData = rows.some(h => h.day_change != null);
+
+  document.getElementById('posStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value">${fmt$(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value ${todayChange >= 0 ? 'up' : 'down'}">${hasTodayData ? (todayChange >= 0 ? '+' : '') + fmt$(todayChange) : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Positions</div><div class="stat-value">${rows.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Unrealized P/L</div><div class="stat-value ${gain >= 0 ? 'up' : 'down'}">${gain >= 0 ? '+' : ''}${fmt$(gain)}</div></div>
+  `;
+
+  // Allocation bar — grouped by ticker (a ticker can appear as multiple rows
+  // across accounts/lots), sorted largest first.
+  const allocPanel = document.getElementById('allocationPanel');
+  if (total > 0) {
+    const byTicker = new Map();
+    for (const h of rows) byTicker.set(h.ticker, (byTicker.get(h.ticker) || 0) + (Number(h.market_value) || 0));
+    const sorted = [...byTicker.entries()].sort((a, b) => b[1] - a[1]);
+    allocPanel.style.display = '';
+    document.getElementById('allocationBar').innerHTML = sorted.map(([ticker, value], i) =>
+      `<div class="allocation-seg" style="width:${(value / total * 100).toFixed(2)}%; background:${PALETTE[i % PALETTE.length]}" title="${ticker}: ${(value / total * 100).toFixed(1)}%"></div>`
+    ).join('');
+    document.getElementById('allocationLegend').innerHTML = sorted.map(([ticker, value], i) => `
+      <div class="allocation-legend-item">
+        <span class="allocation-swatch" style="background:${PALETTE[i % PALETTE.length]}"></span>
+        ${ticker} — ${(value / total * 100).toFixed(1)}%
+      </div>
+    `).join('');
+  } else {
+    allocPanel.style.display = 'none';
+  }
+
+  const wrap = document.getElementById('posTableWrap');
+  if (!rows.length) { wrap.innerHTML = '<p class="empty">No holdings synced yet.</p>'; return; }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Ticker</th><th class="num">Quantity</th><th class="num">Market Value</th><th class="num">% Portfolio</th><th class="num">Today</th><th class="num">Cost Basis</th><th class="num">Synced</th></tr></thead>
+      <tbody>
+        ${rows.map(h => {
+          const pct = total > 0 ? (Number(h.market_value) || 0) / total * 100 : 0;
+          const dayChange = h.day_change != null ? Number(h.day_change) : null;
+          const dayPct = h.day_change_pct != null ? Number(h.day_change_pct) : null;
+          const dayCls = dayChange == null ? '' : dayChange >= 0 ? 'up' : 'down';
+          return `
+          <tr>
+            <td class="ticker">${h.ticker}<span class="relationship-tag" style="margin-left:6px">${h.source}</span></td>
+            <td class="num">${fmtNum(h.quantity)}</td>
+            <td class="num">${fmt$(h.market_value)}</td>
+            <td class="num">${pct.toFixed(1)}%</td>
+            <td class="num ${dayCls}">${dayChange == null ? '—' : `${dayChange >= 0 ? '+' : ''}${fmt$(dayChange)}${dayPct != null ? ` (${dayPct >= 0 ? '+' : ''}${dayPct.toFixed(2)}%)` : ''}`}</td>
+            <td class="num">${fmt$(h.cost_basis)}</td>
+            <td class="num">${timeAgo(h.synced_at)}</td>
+          </tr>
+        `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+document.getElementById('resyncBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('resyncBtn');
+  setBtnLoading(btn, 'Syncing…');
+  try {
+    const r = await fetch('/schwab/sync', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Sync failed.', 'error'); return; }
+    toast('Positions synced.', 'success');
+    await loadPositions();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+
+document.getElementById('connectPlaidBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('connectPlaidBtn');
+  setBtnLoading(btn, 'Loading…');
+  try {
+    const r = await fetch('/plaid/link-token', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Could not start account linking.', 'error'); return; }
+    resetBtn(btn);
+
+    const handler = Plaid.create({
+      token: j.link_token,
+      onSuccess: async (public_token) => {
+        setBtnLoading(btn, 'Connecting…');
+        try {
+          const ex = await fetch('/plaid/exchange', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_token }),
+          });
+          const exJ = await ex.json();
+          if (!ex.ok) { toast(exJ.error || 'Could not finish connecting.', 'error'); return; }
+          toast(`Connected ${exJ.institution_name || 'account'} — syncing positions…`, 'success');
+          const sync = await fetch('/plaid/sync', { method: 'POST' });
+          const syncJ = await sync.json();
+          if (!sync.ok) { toast(syncJ.error || 'Sync failed.', 'error'); return; }
+          toast(syncJ.message, 'success');
+          await loadPositions();
+        } catch (e) {
+          toast('Could not reach the server: ' + e.message, 'error');
+        } finally {
+          resetBtn(btn);
+        }
+      },
+      onExit: () => resetBtn(btn),
+    });
+    handler.open();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+    resetBtn(btn);
+  }
+});
+
+// ---- Market / News snapshots ----
+async function loadSnapshot(kind, panelId) {
+  const r = await fetch('/market/' + kind);
+  const { snapshot } = await r.json();
+  renderSnapshot(panelId, snapshot);
+}
+function renderSnapshot(panelId, snapshot) {
+  const el = document.getElementById(panelId);
+  if (!snapshot) { el.innerHTML = '<p class="empty">No snapshot yet — click Refresh.</p>'; return; }
+  el.innerHTML = `
+    <div class="meta-row"><span class="ts">Updated ${timeAgo(snapshot.created_at)}</span></div>
+    <div class="snapshot-text">${snapshot.summary}</div>
+  `;
+}
+document.getElementById('marketRefreshBtn').addEventListener('click', () => refreshSnapshot('overview', 'marketPanel', 'marketRefreshBtn'));
+document.getElementById('newsRefreshBtn').addEventListener('click', () => refreshSnapshot('news', 'newsPanel', 'newsRefreshBtn'));
+async function refreshSnapshot(kind, panelId, btnId) {
+  const btn = document.getElementById(btnId);
+  setBtnLoading(btn, 'Refreshing…');
+  try {
+    const r = await fetch(`/market/${kind}/refresh`, { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Refresh failed.', 'error'); return; }
+    renderSnapshot(panelId, j.snapshot);
+    toast('Snapshot refreshed.', 'success');
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+}
+
+// ---- AI Assistant ----
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Lightweight markdown: escape first (so no HTML injection from model output
+// or user input), then re-introduce just **bold** and bullet lines.
+function renderMarkdownLite(content) {
+  return escapeHtml(content)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '• $1');
+}
+function bubble(role, content) {
+  const div = document.createElement('div');
+  div.className = 'bubble ' + role;
+  div.innerHTML = renderMarkdownLite(content);
+  return div;
+}
+async function loadChat() {
+  const r = await fetch('/ai/chat');
+  const rows = await r.json();
+  const log = document.getElementById('chatLog');
+  if (!rows.length) return;
+  log.innerHTML = '';
+  rows.forEach(m => log.appendChild(bubble(m.role, m.content)));
+  log.scrollTop = log.scrollHeight;
+}
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const log = document.getElementById('chatLog');
+  if (log.querySelector('.chat-empty')) log.innerHTML = '';
+  log.appendChild(bubble('user', text));
+  input.value = '';
+  log.scrollTop = log.scrollHeight;
+
+  const typing = bubble('assistant', '…');
+  typing.id = 'typingBubble';
+  log.appendChild(typing);
+  log.scrollTop = log.scrollHeight;
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+    const j = await r.json();
+    document.getElementById('typingBubble')?.remove();
+    if (!r.ok) { log.appendChild(bubble('assistant', 'Error: ' + j.error)); return; }
+    log.appendChild(bubble('assistant', j.reply.content));
+  } catch (e) {
+    document.getElementById('typingBubble')?.remove();
+    log.appendChild(bubble('assistant', 'Could not reach the server: ' + e.message));
+  } finally {
+    btn.disabled = false;
+    log.scrollTop = log.scrollHeight;
+  }
+}
+document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+// ---- Recommendations ----
+let allRecommendations = [];
+let recFilter = 'pending';
+
+async function loadRecommendations() {
+  const r = await fetch('/analysis');
+  allRecommendations = await r.json();
+  renderRecommendations();
+}
+function renderRecommendations() {
+  const list = document.getElementById('recList');
+  const rows = recFilter === 'pending'
+    ? allRecommendations.filter(r => r.status === 'pending_review')
+    : allRecommendations;
+
+  if (!rows.length) {
+    list.innerHTML = `<p class="empty">${recFilter === 'pending' ? 'Nothing pending review.' : 'No recommendations yet — click Run analysis.'}</p>`;
+    return;
+  }
+  list.innerHTML = rows.slice(0, 20).map(rec => `
+    <div class="rec-card" data-id="${rec.id}">
+      <div class="rec-head">
+        <span><span class="rec-agent">${rec.agent}</span><span class="rec-time">${timeAgo(rec.created_at)}</span></span>
+        <span class="pill ${rec.confidence || 'low'}">${rec.confidence || '—'}</span>
+      </div>
+      <div class="rec-summary">${rec.summary}</div>
+      ${rec.status === 'pending_review' ? `
+        <div class="rec-actions">
+          <button class="rec-btn approve" data-action="approved" data-id="${rec.id}">✓ Approve</button>
+          <button class="rec-btn reject" data-action="rejected" data-id="${rec.id}">✕ Dismiss</button>
+        </div>
+      ` : `<span class="status-badge ${rec.status}">${rec.status.replace('_', ' ')}</span>`}
+    </div>
+  `).join('');
+}
+document.getElementById('recList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.rec-btn');
+  if (!btn) return;
+  const { id, action } = btn.dataset;
+  const card = btn.closest('.rec-card');
+  card.querySelectorAll('.rec-btn').forEach(b => b.disabled = true);
+  try {
+    const r = await fetch(`/analysis/${id}/${action}`, { method: 'POST' });
+    if (!r.ok) { const j = await r.json(); toast(j.error || 'Action failed.', 'error'); return; }
+    const rec = allRecommendations.find(r => String(r.id) === id);
+    if (rec) rec.status = action;
+    toast(action === 'approved' ? 'Marked as approved.' : 'Dismissed.', 'success');
+    renderRecommendations();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  }
+});
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c === chip));
+    recFilter = chip.dataset.filter;
+    renderRecommendations();
+  });
+});
+document.getElementById('runAnalysisBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('runAnalysisBtn');
+  setBtnLoading(btn, 'Analyzing…');
+  try {
+    const r = await fetch('/analysis/run', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Analysis failed.', 'error'); return; }
+    const failed = (j.results || []).filter(x => x.error);
+    if (failed.length) toast(`${failed.length} of ${j.results.length} agents failed — the rest came back fine.`, 'error');
+    else toast('Analysis complete.', 'success');
+    await loadRecommendations();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+
+// ---- Opportunities (personal portfolio) ----
+let allOpportunities = [];
+let oppFilter = 'pending';
+
+function oppCardHtml(o) {
+  const impactCls = o.financial_impact == null ? '' : Number(o.financial_impact) < 0 ? 'negative' : 'positive';
+  return `
+    <div class="rec-card" data-id="${o.id}">
+      <div class="rec-head">
+        <span><span class="rec-agent">${o.category}</span><span class="rec-time">${timeAgo(o.created_at)}</span></span>
+        <div class="opp-badges">
+          <span class="pill priority-${o.priority}">${o.priority} priority</span>
+          <span class="pill ${o.confidence}">${o.confidence} confidence</span>
+        </div>
+      </div>
+      ${o.financial_impact != null ? `<div class="opp-impact ${impactCls}">${fmt$(Math.abs(o.financial_impact))}${Number(o.financial_impact) < 0 ? ' idle/short' : ' impact'}</div>` : ''}
+      <div class="rec-summary">${o.explanation}</div>
+      <div class="opp-next-step"><strong>Next step:</strong> ${o.recommended_next_step}</div>
+      ${o.specialist_review_required ? '<div class="specialist-flag" style="margin-bottom:10px">⚑ Specialist review recommended</div>' : ''}
+      ${o.status === 'pending_review' ? `
+        <div class="rec-actions">
+          <button class="rec-btn approve" data-oppaction="approved" data-id="${o.id}">✓ Approve</button>
+          <button class="rec-btn reject" data-oppaction="rejected" data-id="${o.id}">✕ Dismiss</button>
+        </div>
+      ` : `<span class="status-badge ${o.status}">${o.status.replace('_', ' ')}</span>`}
+    </div>
+  `;
+}
+
+function renderOpportunityList(rows, containerId) {
+  const filtered = oppFilter === 'pending' ? rows.filter(o => o.status === 'pending_review') : rows;
+  const el = document.getElementById(containerId);
+  if (!filtered.length) { el.innerHTML = `<p class="empty">${oppFilter === 'pending' ? 'Nothing pending review.' : 'No opportunities yet — click Scan.'}</p>`; return; }
+  el.innerHTML = filtered.map(oppCardHtml).join('');
+}
+
+async function loadPersonalOpportunities() {
+  const r = await fetch('/opportunities/personal');
+  allOpportunities = await r.json();
+  renderOpportunityList(allOpportunities, 'oppList');
+}
+document.querySelectorAll('.filter-chip[data-oppfilter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip[data-oppfilter]').forEach(c => c.classList.toggle('active', c === chip));
+    oppFilter = chip.dataset.oppfilter;
+    renderOpportunityList(allOpportunities, 'oppList');
+  });
+});
+document.getElementById('scanPersonalBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('scanPersonalBtn');
+  setBtnLoading(btn, 'Scanning…');
+  try {
+    const r = await fetch('/opportunities/scan/personal', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
+    toast(j.found ? `Found ${j.found} opportunit${j.found === 1 ? 'y' : 'ies'}.` : 'No new opportunities found — looking clean.', j.found ? 'success' : 'success');
+    await loadPersonalOpportunities();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+document.getElementById('oppList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-oppaction]');
+  if (!btn) return;
+  const { oppaction, id } = btn.dataset;
+  btn.closest('.rec-card').querySelectorAll('button').forEach(b => b.disabled = true);
+  try {
+    const r = await fetch(`/opportunities/${id}/${oppaction}`, { method: 'POST' });
+    if (!r.ok) { const j = await r.json(); toast(j.error || 'Action failed.', 'error'); return; }
+    const opp = allOpportunities.find(o => String(o.id) === id);
+    if (opp) opp.status = oppaction;
+    toast(oppaction === 'approved' ? 'Marked as approved.' : 'Dismissed.', 'success');
+    renderOpportunityList(allOpportunities, 'oppList');
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  }
+});
+
+// ---- Clients / Households ----
+const CATEGORY_LABELS = {
+  cash: 'Cash', brokerage: 'Brokerage', '401k': '401(k)', ira: 'IRA', roth_ira: 'Roth IRA',
+  real_estate: 'Real Estate', business_ownership: 'Business Ownership', insurance: 'Insurance',
+  mortgage: 'Mortgage', credit_debt: 'Credit / Debt', other: 'Other',
+};
+let currentHouseholdId = null;
+
+function fmtAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob);
+  const diff = Date.now() - d.getTime();
+  return Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+}
+
+async function renderHouseholdList() {
+  currentHouseholdId = null;
+  const root = document.getElementById('clientsRoot');
+  root.innerHTML = `
+    <div class="topbar">
+      <div><h1>Clients</h1><div class="subtitle">Households you advise — separate from your own portfolio above.</div></div>
+      <button class="btn" data-action="toggle-add-household">+ New Household</button>
+    </div>
+    <div class="add-form" id="addHouseholdForm-wrap">
+      <form id="addHouseholdForm">
+        <div class="field-row">
+          <div class="field"><label>Household name</label><input name="name" placeholder="e.g. The Johnson Family" required /></div>
+        </div>
+        <div class="field-row"><div class="field"><label>Advisor notes (optional)</label><textarea name="advisor_notes" placeholder="Context, referral source, anything worth remembering"></textarea></div></div>
+        <button class="btn" type="submit">Create household</button>
+      </form>
+    </div>
+    <div id="householdGrid"><p class="empty">Loading…</p></div>
+  `;
+  const r = await fetch('/households');
+  const households = await r.json();
+  const grid = document.getElementById('householdGrid');
+  if (!households.length) { grid.innerHTML = '<p class="empty">No households yet — click "+ New Household" to add one.</p>'; return; }
+  grid.className = 'household-grid';
+  grid.innerHTML = households.map(h => `
+    <div class="household-card" data-action="view-household" data-id="${h.id}">
+      <div class="hh-name">${h.name}</div>
+      <div class="hh-members">${h.clients.map(c => c.full_name).join(', ') || 'No clients added yet'}</div>
+      <div class="hh-nw-label">Net Worth</div>
+      <div class="hh-nw ${h.net_worth >= 0 ? 'up' : 'down'}">${fmt$(h.net_worth)}</div>
+    </div>
+  `).join('');
+}
+
+async function renderHouseholdDetail(id) {
+  currentHouseholdId = id;
+  const root = document.getElementById('clientsRoot');
+  root.innerHTML = '<p class="empty">Loading…</p>';
+  const [hr, or_] = await Promise.all([fetch(`/households/${id}`), fetch(`/opportunities/household/${id}`)]);
+  if (!hr.ok) { toast('Could not load household.', 'error'); renderHouseholdList(); return; }
+  const h = await hr.json();
+  const householdOpportunities = or_.ok ? await or_.json() : [];
+
+  const assets = h.accounts.filter(a => !a.is_liability);
+  const liabilities = h.accounts.filter(a => a.is_liability);
+
+  root.innerHTML = `
+    <span class="back-link" data-action="back-to-list">← All households</span>
+    <div class="topbar">
+      <div><h1>${h.name}</h1><div class="subtitle">${h.clients.length} client${h.clients.length === 1 ? '' : 's'} · updated ${timeAgo(h.updated_at)}</div></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><div class="stat-label">Net Worth</div><div class="stat-value ${h.net_worth >= 0 ? 'up' : 'down'}">${fmt$(h.net_worth)}</div></div>
+      <div class="stat-card"><div class="stat-label">Assets</div><div class="stat-value">${fmt$(h.assets)}</div></div>
+      <div class="stat-card"><div class="stat-label">Liabilities</div><div class="stat-value">${fmt$(h.liabilities)}</div></div>
+      <div class="stat-card"><div class="stat-label">Monthly Cash Flow</div><div class="stat-value ${h.monthlyCashFlow >= 0 ? 'up' : 'down'}">${h.monthlyCashFlow >= 0 ? '+' : ''}${fmt$(h.monthlyCashFlow)}</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="field"><label>Advisor notes</label><textarea id="notesField">${h.advisor_notes || ''}</textarea></div>
+      <button class="btn secondary" data-action="save-notes" style="margin-top:8px">Save notes</button>
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Clients</h3><span class="add-toggle" data-action="toggle-add-client">+ Add client</span></div>
+      <div class="add-form" id="addClientForm-wrap">
+        <form id="addClientForm">
+          <div class="field-row">
+            <div class="field"><label>Full name</label><input name="full_name" required /></div>
+            <div class="field"><label>Relationship</label>
+              <select name="relationship"><option value="primary">Primary</option><option value="spouse">Spouse</option><option value="dependent">Dependent</option><option value="other">Other</option></select>
+            </div>
+            <div class="field"><label>Date of birth</label><input name="date_of_birth" type="date" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Employment</label><input name="employment_status" placeholder="e.g. Employed — Engineer" /></div>
+            <div class="field"><label>Annual income</label><input name="annual_income" type="number" step="1000" /></div>
+            <div class="field"><label>Risk tolerance</label>
+              <select name="risk_tolerance"><option value="">—</option><option value="conservative">Conservative</option><option value="moderate">Moderate</option><option value="aggressive">Aggressive</option></select>
+            </div>
+            <div class="field"><label>Retirement target age</label><input name="retirement_target_age" type="number" /></div>
+          </div>
+          <button class="btn" type="submit">Add client</button>
+        </form>
+      </div>
+      ${h.clients.length ? h.clients.map(c => {
+        const age = fmtAge(c.date_of_birth);
+        const bits = [age != null ? `Age ${age}` : null, c.employment_status, c.annual_income ? fmt$(c.annual_income) + '/yr' : null, c.risk_tolerance, c.retirement_target_age ? `Retire at ${c.retirement_target_age}` : null].filter(Boolean).join(' · ');
+        return `
+        <div class="list-row">
+          <div><span class="lr-main">${c.full_name}<span class="relationship-tag">${c.relationship}</span></span><div class="lr-sub">${bits || 'No details yet'}</div></div>
+          <div class="lr-actions"><button class="icon-btn" data-action="delete-client" data-id="${c.id}">✕</button></div>
+        </div>`;
+      }).join('') : '<p class="empty">No clients added yet.</p>'}
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Accounts</h3><span class="add-toggle" data-action="toggle-add-account">+ Add account</span></div>
+      <div class="add-form" id="addAccountForm-wrap">
+        <form id="addAccountForm">
+          <div class="field-row inline">
+            <div class="field"><label>Category</label>
+              <select name="category">${Object.entries(CATEGORY_LABELS).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>Name</label><input name="name" placeholder="e.g. Joint Brokerage — Fidelity" required /></div>
+            <div class="field"><label>Balance</label><input name="balance" type="number" step="100" required /></div>
+            <div class="field" style="flex:0"><label>&nbsp;</label><label style="display:flex;align-items:center;gap:6px;font-weight:500;color:var(--dim);white-space:nowrap"><input type="checkbox" name="is_liability" style="width:auto" /> Liability</label></div>
+          </div>
+          <button class="btn" type="submit">Add account</button>
+        </form>
+      </div>
+      ${assets.length ? assets.map(a => `
+        <div class="list-row">
+          <div><span class="lr-main">${a.name}</span><div class="lr-sub">${CATEGORY_LABELS[a.category] || a.category}</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="lr-value">${fmt$(a.balance)}</span><div class="lr-actions"><button class="icon-btn" data-action="delete-account" data-id="${a.id}">✕</button></div></div>
+        </div>
+      `).join('') : '<p class="empty">No assets on file.</p>'}
+      ${liabilities.length ? liabilities.map(a => `
+        <div class="list-row">
+          <div><span class="lr-main">${a.name}</span><div class="lr-sub">${CATEGORY_LABELS[a.category] || a.category}</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="lr-value liability">−${fmt$(a.balance)}</span><div class="lr-actions"><button class="icon-btn" data-action="delete-account" data-id="${a.id}">✕</button></div></div>
+        </div>
+      `).join('') : ''}
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Goals</h3><span class="add-toggle" data-action="toggle-add-goal">+ Add goal</span></div>
+      <div class="add-form" id="addGoalForm-wrap">
+        <form id="addGoalForm">
+          <div class="field-row inline">
+            <div class="field"><label>Description</label><input name="description" placeholder="e.g. Retire comfortably by 62" required /></div>
+            <div class="field"><label>Target amount</label><input name="target_amount" type="number" step="1000" /></div>
+            <div class="field"><label>Target date</label><input name="target_date" type="date" /></div>
+          </div>
+          <button class="btn" type="submit">Add goal</button>
+        </form>
+      </div>
+      ${h.goals.length ? h.goals.map(g => `
+        <div class="list-row">
+          <div><span class="lr-main">${g.description}</span><div class="lr-sub">${g.target_amount ? fmt$(g.target_amount) : ''}${g.target_date ? ' by ' + new Date(g.target_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : ''} · <span class="status-badge ${g.status === 'achieved' ? 'approved' : g.status === 'abandoned' ? 'rejected' : ''}" style="${g.status === 'active' ? 'background:var(--panel-3);color:var(--dim)' : ''}">${g.status}</span></div></div>
+          <div class="lr-actions">
+            ${g.status === 'active' ? `<button class="icon-btn" data-action="goal-status" data-id="${g.id}" data-status="achieved" title="Mark achieved">✓</button>` : ''}
+            <button class="icon-btn" data-action="delete-goal" data-id="${g.id}">✕</button>
+          </div>
+        </div>
+      `).join('') : '<p class="empty">No goals tracked yet.</p>'}
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Cash Flow</h3><span class="add-toggle" data-action="toggle-add-cashflow">+ Add item</span></div>
+      <div class="add-form" id="addCashflowForm-wrap">
+        <form id="addCashflowForm">
+          <div class="field-row inline">
+            <div class="field"><label>Type</label><select name="kind"><option value="income">Income</option><option value="expense">Expense</option></select></div>
+            <div class="field"><label>Name</label><input name="name" placeholder="e.g. Combined take-home pay" required /></div>
+            <div class="field"><label>Monthly amount</label><input name="monthly_amount" type="number" step="100" required /></div>
+          </div>
+          <button class="btn" type="submit">Add item</button>
+        </form>
+      </div>
+      ${h.cashFlow.length ? h.cashFlow.map(c => `
+        <div class="list-row">
+          <div><span class="lr-main">${c.name}</span><div class="lr-sub">${c.kind === 'income' ? 'Income' : 'Expense'} · monthly</div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="lr-value ${c.kind === 'expense' ? 'liability' : ''}">${c.kind === 'expense' ? '−' : '+'}${fmt$(c.monthly_amount)}</span><div class="lr-actions"><button class="icon-btn" data-action="delete-cashflow" data-id="${c.id}">✕</button></div></div>
+        </div>
+      `).join('') : '<p class="empty">No cash flow items tracked yet.</p>'}
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Estate & Insurance</h3></div>
+      <form id="estateForm">
+        <div class="field-row">
+          ${triStateField('has_will', 'Will', h.has_will)}
+          ${triStateField('has_trust', 'Trust', h.has_trust)}
+          ${triStateField('has_poa', 'Power of Attorney', h.has_poa)}
+          ${triStateField('beneficiaries_current', 'Beneficiaries Current', h.beneficiaries_current)}
+        </div>
+        <div class="field-row">
+          ${triStateField('life_insurance', 'Life Insurance', h.life_insurance)}
+          ${triStateField('disability_insurance', 'Disability Insurance', h.disability_insurance)}
+          ${triStateField('umbrella_insurance', 'Umbrella Insurance', h.umbrella_insurance)}
+          ${triStateField('ltc_insurance', 'Long-Term Care Insurance', h.ltc_insurance)}
+        </div>
+        <button class="btn secondary" type="submit">Save</button>
+      </form>
+    </div>
+
+    <div class="panel detail-section">
+      <div class="detail-section-head"><h3>Opportunities</h3><button class="btn secondary" id="scanHouseholdBtn" data-action="scan-household-opps" style="padding:8px 14px;font-size:12px">Scan for opportunities</button></div>
+      <div id="householdOppList">${householdOpportunities.filter(o => o.status === 'pending_review').length
+        ? householdOpportunities.filter(o => o.status === 'pending_review').map(oppCardHtml).join('')
+        : '<p class="empty">No open opportunities — click Scan.</p>'}</div>
+    </div>
+  `;
+}
+
+function triStateField(name, label, value) {
+  const opt = (v, text) => `<option value="${v}" ${String(value) === v ? 'selected' : (value == null && v === '') ? 'selected' : ''}>${text}</option>`;
+  return `
+    <div class="field">
+      <label>${label}</label>
+      <select name="${name}">
+        ${opt('', 'Unknown')}
+        ${opt('true', 'Yes')}
+        ${opt('false', 'No')}
+      </select>
+    </div>
+  `;
+}
+
+function toggleAddForm(id) {
+  document.getElementById(id + '-wrap')?.classList.toggle('open');
+}
+
+document.getElementById('clientsRoot').addEventListener('click', async (e) => {
+  const oppEl = e.target.closest('[data-oppaction]');
+  if (oppEl) {
+    const { oppaction, id: oppId } = oppEl.dataset;
+    oppEl.closest('.rec-card').querySelectorAll('button').forEach(b => b.disabled = true);
+    try {
+      const r = await fetch(`/opportunities/${oppId}/${oppaction}`, { method: 'POST' });
+      if (!r.ok) { const j = await r.json(); toast(j.error || 'Action failed.', 'error'); return; }
+      toast(oppaction === 'approved' ? 'Marked as approved.' : 'Dismissed.', 'success');
+      return renderHouseholdDetail(currentHouseholdId);
+    } catch (err) {
+      toast('Could not reach the server: ' + err.message, 'error');
+      return;
+    }
+  }
+
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const { action, id, status } = el.dataset;
+
+  if (action === 'scan-household-opps') {
+    setBtnLoading(el, 'Scanning…');
+    try {
+      const r = await fetch(`/opportunities/scan/household/${currentHouseholdId}`, { method: 'POST' });
+      const j = await r.json();
+      if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
+      toast(j.found ? `Found ${j.found} opportunit${j.found === 1 ? 'y' : 'ies'}.` : 'No new opportunities found — looking clean.', 'success');
+      return renderHouseholdDetail(currentHouseholdId);
+    } catch (err) {
+      toast('Could not reach the server: ' + err.message, 'error');
+      return;
+    }
+  }
+  if (action === 'toggle-add-household') return toggleAddForm('addHouseholdForm');
+  if (action === 'toggle-add-client') return toggleAddForm('addClientForm');
+  if (action === 'toggle-add-account') return toggleAddForm('addAccountForm');
+  if (action === 'toggle-add-goal') return toggleAddForm('addGoalForm');
+  if (action === 'toggle-add-cashflow') return toggleAddForm('addCashflowForm');
+  if (action === 'view-household') return renderHouseholdDetail(id);
+  if (action === 'back-to-list') return renderHouseholdList();
+
+  if (action === 'save-notes') {
+    const advisor_notes = document.getElementById('notesField').value;
+    await fetch(`/households/${currentHouseholdId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ advisor_notes }),
+    });
+    toast('Notes saved.', 'success');
+    return;
+  }
+  if (action === 'delete-client') {
+    if (!confirm('Remove this client from the household?')) return;
+    await fetch(`/households/${currentHouseholdId}/clients/${id}`, { method: 'DELETE' });
+    return renderHouseholdDetail(currentHouseholdId);
+  }
+  if (action === 'delete-account') {
+    await fetch(`/households/${currentHouseholdId}/accounts/${id}`, { method: 'DELETE' });
+    return renderHouseholdDetail(currentHouseholdId);
+  }
+  if (action === 'delete-goal') {
+    await fetch(`/households/${currentHouseholdId}/goals/${id}`, { method: 'DELETE' });
+    return renderHouseholdDetail(currentHouseholdId);
+  }
+  if (action === 'goal-status') {
+    await fetch(`/households/${currentHouseholdId}/goals/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
+    });
+    return renderHouseholdDetail(currentHouseholdId);
+  }
+  if (action === 'delete-cashflow') {
+    await fetch(`/households/${currentHouseholdId}/cashflow/${id}`, { method: 'DELETE' });
+    return renderHouseholdDetail(currentHouseholdId);
+  }
+});
+
+document.getElementById('clientsRoot').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  try {
+    if (form.id === 'addHouseholdForm') {
+      const r = await fetch('/households', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      toast('Household created.', 'success');
+      return renderHouseholdList();
+    }
+    if (form.id === 'addClientForm') {
+      const r = await fetch(`/households/${currentHouseholdId}/clients`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      return renderHouseholdDetail(currentHouseholdId);
+    }
+    if (form.id === 'addAccountForm') {
+      data.is_liability = form.is_liability.checked;
+      const r = await fetch(`/households/${currentHouseholdId}/accounts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      return renderHouseholdDetail(currentHouseholdId);
+    }
+    if (form.id === 'addGoalForm') {
+      const r = await fetch(`/households/${currentHouseholdId}/goals`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      return renderHouseholdDetail(currentHouseholdId);
+    }
+    if (form.id === 'addCashflowForm') {
+      const r = await fetch(`/households/${currentHouseholdId}/cashflow`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      return renderHouseholdDetail(currentHouseholdId);
+    }
+    if (form.id === 'estateForm') {
+      // Tri-state selects come through as the strings "true"/"false"/"" —
+      // convert to real booleans/null before sending.
+      const payload = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v === '' ? null : v === 'true']));
+      const r = await fetch(`/households/${currentHouseholdId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!r.ok) { const j = await r.json(); toast(j.error, 'error'); return; }
+      toast('Estate & insurance details saved.', 'success');
+      return renderHouseholdDetail(currentHouseholdId);
+    }
+  } catch (err) {
+    toast('Could not reach the server: ' + err.message, 'error');
+  }
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+
+// ---- Boot ----
+(async function boot() {
+  try {
+    const r = await fetch('/api/status');
+    const j = await r.json();
+    if (!j.loggedIn || !j.schwabConnected || !j.hasHoldings) { location.href = '/'; return; }
+  } catch {
+    location.href = '/';
+    return;
+  }
+  const initial = location.hash.replace('#', '') || 'positions';
+  activateTab(['positions', 'market', 'news', 'assistant', 'recommendations', 'opportunities', 'clients'].includes(initial) ? initial : 'positions');
+})();
+</script>
+</body>
+</html>
