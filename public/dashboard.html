@@ -157,6 +157,30 @@
   td.num.up { color: var(--green); }
   td.num.down { color: var(--danger); }
 
+  /* ---- Live quotes ---- */
+  .quote-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .quote-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(90,70,30,0.05); }
+  .quote-card .q-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim-2); font-weight: 650; margin-bottom: 6px; }
+  .quote-card .q-price { font-size: 19px; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .quote-card .q-change { font-size: 12px; font-weight: 650; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .holdings-quote-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .holdings-quote-chip {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 10px; font-size: 12.5px;
+  }
+  .holdings-quote-chip .qc-ticker { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+  /* ---- News feed ---- */
+  .news-card { display: flex; gap: 14px; padding: 16px 0; border-top: 1px solid var(--border-soft); }
+  .news-card:first-child { border-top: none; }
+  .news-card img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; flex-shrink: 0; background: var(--panel-2); }
+  .news-card .n-body { min-width: 0; flex: 1; }
+  .news-card .n-meta { font-size: 11px; color: var(--dim-2); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .news-card .n-ticker { font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--gold); }
+  .news-card a.n-headline { color: var(--text); font-weight: 650; font-size: 14px; text-decoration: none; line-height: 1.4; }
+  .news-card a.n-headline:hover { color: var(--accent); }
+  .news-card .n-summary { font-size: 12.5px; color: var(--dim); margin-top: 5px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
   /* ---- Allocation bar ---- */
   .allocation { margin-bottom: 20px; }
   .allocation-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--panel-2); }
@@ -198,6 +222,9 @@
   .pill.priority-high { background: var(--danger-glow); color: var(--danger); }
   .pill.priority-medium { background: rgba(156,122,60,0.14); color: var(--gold); }
   .pill.priority-low { background: rgba(110,102,86,0.12); color: var(--dim); }
+  .pill.source-det { background: rgba(31,122,82,0.12); color: var(--green); }
+  .pill.source-ai { background: rgba(156,122,60,0.14); color: var(--gold); }
+  .rec-card.ai-idea { border-left: 3px solid var(--accent-2); }
   .opp-badges { display: flex; gap: 6px; align-items: center; }
   .opp-impact { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
   .opp-impact.negative { color: var(--danger); }
@@ -392,19 +419,28 @@
   <!-- Market -->
   <section class="tab-panel" id="tab-market">
     <div class="topbar">
-      <div><h1>Market</h1><div class="subtitle">Broad market tape — refreshed on demand, not live-streamed.</div></div>
-      <button class="btn" id="marketRefreshBtn">Refresh</button>
+      <div><h1>Market</h1><div class="subtitle" id="marketAsOf">Live quotes — real data, updates automatically while this tab is open.</div></div>
+      <button class="btn secondary" id="marketRefreshQuotesBtn">Refresh now</button>
     </div>
-    <div class="panel" id="marketPanel"><p class="empty">No snapshot yet — click Refresh.</p></div>
+    <div id="indexQuotes" class="quote-grid"><p class="empty">Loading live quotes…</p></div>
+    <div id="holdingQuotes"></div>
+
+    <div class="panel" style="margin-top:8px">
+      <div class="detail-section-head" style="margin-bottom:0">
+        <h3 style="font-size:14px">AI Market Take</h3>
+        <button class="btn secondary" id="marketRefreshBtn" style="padding:8px 14px;font-size:12px">Refresh</button>
+      </div>
+      <div id="marketPanel"><p class="empty">No snapshot yet — click Refresh.</p></div>
+    </div>
   </section>
 
   <!-- News -->
   <section class="tab-panel" id="tab-news">
     <div class="topbar">
-      <div><h1>News</h1><div class="subtitle">Market-moving headlines, not tied to your specific holdings.</div></div>
+      <div><h1>News</h1><div class="subtitle" id="newsAsOf">Real headlines — general market news plus coverage on your actual holdings.</div></div>
       <button class="btn" id="newsRefreshBtn">Refresh</button>
     </div>
-    <div class="panel" id="newsPanel"><p class="empty">No snapshot yet — click Refresh.</p></div>
+    <div id="newsFeed"><p class="empty">Loading news…</p></div>
   </section>
 
   <!-- AI Assistant -->
@@ -438,7 +474,7 @@
   <!-- Opportunities (personal portfolio) -->
   <section class="tab-panel" id="tab-opportunities">
     <div class="topbar">
-      <div><h1>Opportunities</h1><div class="subtitle">Deterministic checks against your own synced holdings — no LLM guesses the numbers.</div></div>
+      <div><h1>Opportunities</h1><div class="subtitle">Deterministic checks on your real data, plus AI trade ideas — each card says which. Nothing here acts automatically.</div></div>
       <button class="btn" id="scanPersonalBtn">Scan for opportunities</button>
     </div>
     <div class="filter-row">
@@ -446,6 +482,14 @@
       <span class="filter-chip" data-oppfilter="all">All history</span>
     </div>
     <div id="oppList"><p class="empty">No opportunities yet — click Scan.</p></div>
+
+    <div class="panel" style="margin-top:24px">
+      <div class="detail-section-head">
+        <h3>Options Strategy Ideas</h3>
+        <button class="btn secondary" id="scanOptionsBtn" style="padding:8px 14px;font-size:12px">Scan for options ideas</button>
+      </div>
+      <p class="opp-next-step" style="margin-top:0">⚑ Options carry meaningfully more risk than the ideas above — leverage, time decay, assignment — and your broker requires separate approval to trade them. These are strategy-level research prompts only, never specific strikes or premiums (no live options-chain data feeds this). Look up real pricing yourself before doing anything.</p>
+    </div>
   </section>
 
   <!-- Clients -->
@@ -494,11 +538,19 @@ function activateTab(tab) {
   document.querySelectorAll('.nav-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + tab));
   history.replaceState({}, '', '#' + tab);
+
+  // Live quotes poll only while the Market tab is actually being looked at.
+  if (quotePollTimer) { clearInterval(quotePollTimer); quotePollTimer = null; }
+  if (tab === 'market') {
+    loadQuotes(false);
+    quotePollTimer = setInterval(() => loadQuotes(false), 45000);
+  }
+
   if (!loaded.has(tab)) {
     loaded.add(tab);
     if (tab === 'positions') loadPositions();
     if (tab === 'market') loadSnapshot('overview', 'marketPanel');
-    if (tab === 'news') loadSnapshot('news', 'newsPanel');
+    if (tab === 'news') loadNewsFeed(false);
     if (tab === 'assistant') loadChat();
     if (tab === 'recommendations') loadRecommendations();
     if (tab === 'clients') renderHouseholdList();
@@ -665,7 +717,6 @@ function renderSnapshot(panelId, snapshot) {
   `;
 }
 document.getElementById('marketRefreshBtn').addEventListener('click', () => refreshSnapshot('overview', 'marketPanel', 'marketRefreshBtn'));
-document.getElementById('newsRefreshBtn').addEventListener('click', () => refreshSnapshot('news', 'newsPanel', 'newsRefreshBtn'));
 async function refreshSnapshot(kind, panelId, btnId) {
   const btn = document.getElementById(btnId);
   setBtnLoading(btn, 'Refreshing…');
@@ -681,6 +732,87 @@ async function refreshSnapshot(kind, panelId, btnId) {
     resetBtn(btn);
   }
 }
+
+// ---- Live quotes (real data, no LLM) ----
+let quotePollTimer = null;
+
+function quoteChangeHtml(q) {
+  const cls = q.change >= 0 ? 'up' : 'down';
+  const sign = q.change >= 0 ? '+' : '';
+  return `<div class="q-change ${cls}">${sign}${q.change.toFixed(2)} (${sign}${q.changePct.toFixed(2)}%)</div>`;
+}
+
+async function loadQuotes(showSpinnerToast) {
+  try {
+    const r = await fetch('/market/quotes');
+    const j = await r.json();
+    if (!r.ok) {
+      document.getElementById('indexQuotes').innerHTML = `<p class="empty">${j.error || 'Live quotes unavailable.'}</p>`;
+      document.getElementById('holdingQuotes').innerHTML = '';
+      return;
+    }
+    document.getElementById('indexQuotes').innerHTML = j.indices.map(q => `
+      <div class="quote-card">
+        <div class="q-label">${q.label}</div>
+        <div class="q-price">$${q.price.toFixed(2)}</div>
+        ${quoteChangeHtml(q)}
+      </div>
+    `).join('') || '<p class="empty">No index data.</p>';
+
+    document.getElementById('holdingQuotes').innerHTML = j.holdings.length ? `
+      <div class="stat-label" style="margin-bottom:10px">Your Holdings — Live</div>
+      <div class="holdings-quote-row">
+        ${j.holdings.map(q => `
+          <div class="holdings-quote-chip">
+            <span class="qc-ticker">${q.symbol}</span>
+            <span>$${q.price.toFixed(2)}</span>
+            <span class="${q.change >= 0 ? 'td num up' : 'td num down'}" style="font-weight:650">${q.change >= 0 ? '+' : ''}${q.changePct.toFixed(2)}%</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    document.getElementById('marketAsOf').textContent = `Live quotes — updated ${timeAgo(j.asOf)}`;
+    if (showSpinnerToast) toast('Quotes refreshed.', 'success');
+  } catch (e) {
+    document.getElementById('indexQuotes').innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+document.getElementById('marketRefreshQuotesBtn').addEventListener('click', () => {
+  const btn = document.getElementById('marketRefreshQuotesBtn');
+  setBtnLoading(btn, 'Refreshing…');
+  loadQuotes(true).finally(() => resetBtn(btn));
+});
+
+// ---- Real news feed (real articles, no LLM paraphrasing) ----
+async function loadNewsFeed(showToast) {
+  try {
+    const r = await fetch('/market/news-feed');
+    const j = await r.json();
+    const feed = document.getElementById('newsFeed');
+    if (!r.ok) { feed.innerHTML = `<p class="empty">${j.error || 'News unavailable.'}</p>`; return; }
+    if (!j.articles.length) { feed.innerHTML = '<p class="empty">No articles right now.</p>'; return; }
+    feed.innerHTML = `<div class="panel">` + j.articles.map(a => `
+      <div class="news-card">
+        ${a.image ? `<img src="${a.image}" loading="lazy" onerror="this.style.display='none'" />` : ''}
+        <div class="n-body">
+          <div class="n-meta">${a.ticker ? `<span class="n-ticker">${a.ticker}</span>` : ''}<span>${a.source || ''}</span><span>${timeAgo(a.datetime)}</span></div>
+          <a class="n-headline" href="${a.url}" target="_blank" rel="noopener">${a.headline}</a>
+          ${a.summary ? `<div class="n-summary">${a.summary}</div>` : ''}
+        </div>
+      </div>
+    `).join('') + `</div>`;
+    document.getElementById('newsAsOf').textContent = `Real headlines — updated ${timeAgo(j.asOf)}`;
+    if (showToast) toast('News refreshed.', 'success');
+  } catch (e) {
+    document.getElementById('newsFeed').innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+document.getElementById('newsRefreshBtn').addEventListener('click', () => {
+  const btn = document.getElementById('newsRefreshBtn');
+  setBtnLoading(btn, 'Refreshing…');
+  loadNewsFeed(true).finally(() => resetBtn(btn));
+});
 
 // ---- AI Assistant ----
 function escapeHtml(s) {
@@ -829,13 +961,14 @@ let oppFilter = 'pending';
 
 function oppCardHtml(o) {
   const impactCls = o.financial_impact == null ? '' : Number(o.financial_impact) < 0 ? 'negative' : 'positive';
+  const isAi = o.source === 'ai';
   return `
-    <div class="rec-card" data-id="${o.id}">
+    <div class="rec-card ${isAi ? 'ai-idea' : ''}" data-id="${o.id}">
       <div class="rec-head">
         <span><span class="rec-agent">${o.category}</span><span class="rec-time">${timeAgo(o.created_at)}</span></span>
         <div class="opp-badges">
+          <span class="pill ${isAi ? 'source-ai' : 'source-det'}">${isAi ? '✦ AI idea' : '# deterministic'}</span>
           <span class="pill priority-${o.priority}">${o.priority} priority</span>
-          <span class="pill ${o.confidence}">${o.confidence} confidence</span>
         </div>
       </div>
       ${o.financial_impact != null ? `<div class="opp-impact ${impactCls}">${fmt$(Math.abs(o.financial_impact))}${Number(o.financial_impact) < 0 ? ' idle/short' : ' impact'}</div>` : ''}
@@ -878,7 +1011,23 @@ document.getElementById('scanPersonalBtn').addEventListener('click', async () =>
     const r = await fetch('/opportunities/scan/personal', { method: 'POST' });
     const j = await r.json();
     if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
-    toast(j.found ? `Found ${j.found} opportunit${j.found === 1 ? 'y' : 'ies'}.` : 'No new opportunities found — looking clean.', j.found ? 'success' : 'success');
+    toast(j.found ? `Found ${j.found} opportunit${j.found === 1 ? 'y' : 'ies'}.` : 'No new opportunities found — looking clean.', 'success');
+    if (j.aiError) toast('Trade-idea scan failed: ' + j.aiError, 'error');
+    await loadPersonalOpportunities();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+document.getElementById('scanOptionsBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('scanOptionsBtn');
+  setBtnLoading(btn, 'Scanning…');
+  try {
+    const r = await fetch('/opportunities/scan/options', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
+    toast(j.found ? `Found ${j.found} options idea${j.found === 1 ? '' : 's'}.` : 'Nothing stood out right now.', 'success');
     await loadPersonalOpportunities();
   } catch (e) {
     toast('Could not reach the server: ' + e.message, 'error');

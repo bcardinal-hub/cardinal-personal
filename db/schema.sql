@@ -191,6 +191,10 @@ CREATE TABLE opportunities (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   household_id INTEGER REFERENCES households(id) ON DELETE CASCADE,
+  -- 'deterministic' rows are pure arithmetic on real data (lib/opportunityEngine.js);
+  -- 'ai' rows are judgment calls from a web-search-backed Claude agent
+  -- (lib/tradeIdeas.js) — never conflate the two in the UI.
+  source TEXT NOT NULL DEFAULT 'deterministic' CHECK (source IN ('deterministic', 'ai')),
   category TEXT NOT NULL,
   priority TEXT NOT NULL CHECK (priority IN ('high', 'medium', 'low')),
   confidence TEXT NOT NULL CHECK (confidence IN ('high', 'medium', 'low')),
