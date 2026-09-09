@@ -530,11 +530,15 @@ async function loadPositions() {
 document.getElementById('resyncBtn').addEventListener('click', async () => {
   const btn = document.getElementById('resyncBtn');
   setBtnLoading(btn, 'Syncing…');
+  // Sync whichever source(s) are actually connected — most subscribers
+  // have Plaid only, some (just you, today) have Schwab only, and either
+  // could in principle have both.
+  const endpoints = [appStatus.schwabConnected && '/schwab/sync', appStatus.plaidConnected && '/plaid/sync'].filter(Boolean);
   try {
-    const r = await fetch('/schwab/sync', { method: 'POST' });
-    const j = await r.json();
-    if (!r.ok) { toast(j.error || 'Sync failed.', 'error'); return; }
-    toast('Positions synced.', 'success');
+    const results = await Promise.all(endpoints.map(ep => fetch(ep, { method: 'POST' }).then(r => r.json().then(j => ({ ok: r.ok, j })))));
+    const failed = results.filter(r => !r.ok);
+    if (failed.length) toast(failed.map(f => f.j.error).join(' / '), 'error');
+    else toast('Positions synced.', 'success');
     await loadPositions();
   } catch (e) {
     toast('Could not reach the server: ' + e.message, 'error');
@@ -1192,11 +1196,13 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---- Boot ----
+let appStatus = {};
 (async function boot() {
   try {
     const r = await fetch('/api/status');
     const j = await r.json();
-    if (!j.loggedIn || !j.schwabConnected || !j.hasHoldings) { location.href = '/'; return; }
+    appStatus = j;
+    if (!j.loggedIn || !j.accountConnected || !j.hasHoldings) { location.href = '/'; return; }
   } catch {
     location.href = '/';
     return;

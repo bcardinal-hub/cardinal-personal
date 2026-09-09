@@ -91,13 +91,20 @@ app.use(express.static(path.join(__dirname, "public")));
 // Schwab's OAuth redirect bounces the browser back to us.
 app.get("/api/status", async (req, res) => {
   if (!req.session.userId) return res.json({ loggedIn: false });
-  const [{ rows: conn }, { rows: holdings }] = await Promise.all([
+  const [{ rows: schwab }, { rows: plaid }, { rows: holdings }] = await Promise.all([
     pool.query("SELECT 1 FROM schwab_connections WHERE user_id = $1 LIMIT 1", [req.session.userId]),
+    pool.query("SELECT 1 FROM plaid_connections WHERE user_id = $1 LIMIT 1", [req.session.userId]),
     pool.query("SELECT 1 FROM holdings WHERE user_id = $1 LIMIT 1", [req.session.userId]),
   ]);
   res.json({
     loggedIn: true,
-    schwabConnected: conn.length > 0,
+    schwabConnected: schwab.length > 0,
+    plaidConnected: plaid.length > 0,
+    // Almost every real subscriber connects via Plaid, not Schwab (Schwab's
+    // Individual tier only ever authorizes the app registrant's own
+    // account) — the wizard gates on "connected to *something*", not Schwab
+    // specifically.
+    accountConnected: schwab.length > 0 || plaid.length > 0,
     hasHoldings: holdings.length > 0,
   });
 });

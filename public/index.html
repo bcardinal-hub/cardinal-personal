@@ -179,6 +179,7 @@
 
   footer { text-align: center; color: var(--dim-2); font-size: 11.5px; margin-top: 36px; max-width: 460px; }
 </style>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
 <body>
 
@@ -253,10 +254,11 @@ function renderStage(errorMsg) {
   if (current === 'connect') {
     stage.innerHTML = `
       <p class="eyebrow">Step 2 of 3</p>
-      <h2>Connect Schwab</h2>
-      <p class="desc">You'll be taken to Schwab's real login page. This app never sees your Schwab password — Schwab hands us back a token, not your credentials.</p>
+      <h2>Connect your account</h2>
+      <p class="desc">Link your bank or brokerage — this app never sees your login credentials, only a read-only token handed back by your institution.</p>
       ${banner(errorMsg)}
-      <a class="btn" href="/schwab/connect">Connect Schwab →</a>
+      <button class="btn" id="plaidBtn" onclick="doPlaidConnect()">Connect bank or brokerage →</button>
+      <div class="link-row"><span class="link" onclick="doSchwabConnect()">Have your own Schwab developer app instead?</span></div>
       <div class="link-row"><span class="link" onclick="signOut()">Sign out</span></div>
       <div class="safety">🔒 Read-only access. No route in this app can place, modify, or cancel a trade.</div>
     `;
@@ -267,12 +269,53 @@ function renderStage(errorMsg) {
     stage.innerHTML = `
       <p class="eyebrow">Step 3 of 3</p>
       <h2>Sync positions</h2>
-      <p class="desc">Schwab is connected. Pull your current holdings, then head into your dashboard.</p>
+      <p class="desc">Your account is connected. Pull your current holdings, then head into your dashboard.</p>
       ${banner(errorMsg)}
       <button class="btn" id="syncBtn" onclick="doSync()">Sync positions →</button>
     `;
     return;
   }
+}
+
+async function doPlaidConnect() {
+  if (busy) return;
+  busy = true;
+  setButtonLoading('plaidBtn', 'Loading…');
+  try {
+    const r = await fetch('/plaid/link-token', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { busy = false; renderStage(j.error || 'Could not start account linking.'); return; }
+    document.getElementById('plaidBtn').innerHTML = document.getElementById('plaidBtn').dataset.original || 'Connect bank or brokerage →';
+    document.getElementById('plaidBtn').disabled = false;
+
+    const handler = Plaid.create({
+      token: j.link_token,
+      onSuccess: async (public_token) => {
+        setButtonLoading('plaidBtn', 'Connecting…');
+        try {
+          const ex = await fetch('/plaid/exchange', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ public_token }),
+          });
+          const exJ = await ex.json();
+          if (!ex.ok) { renderStage(exJ.error || 'Could not finish connecting.'); return; }
+          await refreshState();
+        } catch (e) {
+          renderStage('Could not reach the server: ' + e.message);
+        } finally {
+          busy = false;
+        }
+      },
+      onExit: () => { busy = false; const btn = document.getElementById('plaidBtn'); if (btn) { btn.disabled = false; if (btn.dataset.original) btn.innerHTML = btn.dataset.original; } },
+    });
+    handler.open();
+  } catch (e) {
+    busy = false;
+    renderStage('Could not reach the server: ' + e.message);
+  }
+}
+
+function doSchwabConnect() {
+  location.href = '/schwab/connect';
 }
 
 function setButtonLoading(id, loadingLabel) {
@@ -312,10 +355,13 @@ async function doSync() {
   if (busy) return;
   busy = true;
   setButtonLoading('syncBtn', 'Syncing…');
+  // Plaid is the primary path for real subscribers; Schwab is the fallback
+  // for someone who registered their own Individual developer app.
+  const endpoint = lastStatus.plaidConnected ? '/plaid/sync' : '/schwab/sync';
   try {
-    const r = await fetch('/schwab/sync', { method: 'POST' });
+    const r = await fetch(endpoint, { method: 'POST' });
     const j = await r.json();
-    log('POST /schwab/sync', j);
+    log(`POST ${endpoint}`, j);
     if (!r.ok) { busy = false; renderStage(j.error); return; }
     await refreshState();
   } catch (e) {
@@ -333,12 +379,15 @@ async function signOut() {
   renderStage();
 }
 
+let lastStatus = {};
+
 async function refreshState() {
   try {
     const r = await fetch('/api/status');
     const j = await r.json();
+    lastStatus = j;
     if (!j.loggedIn) { current = 'auth'; renderStepper(); renderStage(); return; }
-    if (!j.schwabConnected) { current = 'connect'; renderStepper(); renderStage(); return; }
+    if (!j.accountConnected) { current = 'connect'; renderStepper(); renderStage(); return; }
     if (!j.hasHoldings) { current = 'sync'; renderStepper(); renderStage(); return; }
     // Fully onboarded — hand off to the real dashboard.
     location.href = '/dashboard.html';
