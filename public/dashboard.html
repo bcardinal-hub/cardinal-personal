@@ -301,7 +301,34 @@
   }
 
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  .tab-panel.active { display: block; animation: panelIn .38s cubic-bezier(.16,1,.3,1); }
+  @keyframes panelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- Motion system ---- */
+  .stat-card, .quote-card, .rec-card, .household-card, .panel, .news-card, .holdings-quote-chip {
+    animation: cardIn .4s cubic-bezier(.16,1,.3,1) backwards;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .stats > *:nth-child(1), .quote-grid > *:nth-child(1) { animation-delay: 0ms; }
+  .stats > *:nth-child(2), .quote-grid > *:nth-child(2) { animation-delay: 40ms; }
+  .stats > *:nth-child(3), .quote-grid > *:nth-child(3) { animation-delay: 80ms; }
+  .stats > *:nth-child(4), .quote-grid > *:nth-child(4) { animation-delay: 120ms; }
+  .stats > *:nth-child(5), .quote-grid > *:nth-child(5) { animation-delay: 160ms; }
+  .rec-card:hover, .household-card:hover, .quote-card:hover, .stat-card:hover {
+    transform: translateY(-2px); box-shadow: 0 12px 28px -14px rgba(90,70,30,0.28);
+  }
+  .nav-item { transition: background .15s ease, color .15s ease, transform .12s ease; }
+  .nav-item:active { transform: scale(0.97); }
+
+  /* Skeleton shimmer for loading states, replacing plain "Loading…" text */
+  .skeleton { border-radius: 10px; background: linear-gradient(100deg, var(--panel-2) 30%, var(--panel-3) 50%, var(--panel-2) 70%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+  @keyframes shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  .skeleton-row { height: 68px; margin-bottom: 8px; }
+  .skeleton-stat { height: 88px; }
+
+  /* Animated number count-up target */
+  .count-up { display: inline-block; }
 
   /* ---- Forms (households/clients/accounts) ---- */
   .field-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -412,7 +439,7 @@
       <div class="allocation-legend" id="allocationLegend"></div>
     </div>
     <div class="panel">
-      <div id="posTableWrap"><p class="empty">Loading…</p></div>
+      <div id="posTableWrap"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>
     </div>
   </section>
 
@@ -422,7 +449,7 @@
       <div><h1>Market</h1><div class="subtitle" id="marketAsOf">Live quotes — real data, updates automatically while this tab is open.</div></div>
       <button class="btn secondary" id="marketRefreshQuotesBtn">Refresh now</button>
     </div>
-    <div id="indexQuotes" class="quote-grid"><p class="empty">Loading live quotes…</p></div>
+    <div id="indexQuotes" class="quote-grid"><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div><div class="skeleton skeleton-stat"></div></div>
     <div id="holdingQuotes"></div>
 
     <div class="panel" style="margin-top:8px">
@@ -440,7 +467,7 @@
       <div><h1>News</h1><div class="subtitle" id="newsAsOf">Real headlines — general market news plus coverage on your actual holdings.</div></div>
       <button class="btn" id="newsRefreshBtn">Refresh</button>
     </div>
-    <div id="newsFeed"><p class="empty">Loading news…</p></div>
+    <div id="newsFeed"><div class="panel"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div></div>
   </section>
 
   <!-- AI Assistant -->
@@ -523,6 +550,24 @@ function toast(message, kind = 'error') {
   setTimeout(() => el.remove(), kind === 'error' ? 6000 : 3500);
 }
 
+// Animates a number from 0 to `target`, formatting each frame with `fmt`.
+// Respects reduced-motion preference by just setting the final value.
+function animateNumber(el, target, fmt, duration = 700) {
+  if (!el || !isFinite(target)) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = fmt(target);
+    return;
+  }
+  const start = performance.now();
+  const ease = t => 1 - Math.pow(1 - t, 3); // ease-out cubic
+  function tick(now) {
+    const p = Math.min(1, (now - start) / duration);
+    el.textContent = fmt(target * ease(p));
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 function setBtnLoading(el, label) {
   el.disabled = true;
   el.dataset.original = el.innerHTML;
@@ -588,11 +633,13 @@ async function loadPositions() {
   const hasTodayData = rows.some(h => h.day_change != null);
 
   document.getElementById('posStats').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value">${fmt$(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Portfolio Value</div><div class="stat-value count-up" id="statPortfolioValue">$0</div></div>
     <div class="stat-card"><div class="stat-label">Today</div><div class="stat-value ${todayChange >= 0 ? 'up' : 'down'}">${hasTodayData ? (todayChange >= 0 ? '+' : '') + fmt$(todayChange) : '—'}</div></div>
     <div class="stat-card"><div class="stat-label">Positions</div><div class="stat-value">${rows.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Unrealized P/L</div><div class="stat-value ${gain >= 0 ? 'up' : 'down'}">${gain >= 0 ? '+' : ''}${fmt$(gain)}</div></div>
+    <div class="stat-card"><div class="stat-label">Unrealized P/L</div><div class="stat-value ${gain >= 0 ? 'up' : 'down'} count-up" id="statUnrealizedPL">$0</div></div>
   `;
+  animateNumber(document.getElementById('statPortfolioValue'), total, fmt$);
+  animateNumber(document.getElementById('statUnrealizedPL'), gain, v => (gain >= 0 ? '+' : '') + fmt$(v));
 
   // Allocation bar — grouped by ticker (a ticker can appear as multiple rows
   // across accounts/lots), sorted largest first.
@@ -1084,7 +1131,7 @@ async function renderHouseholdList() {
         <button class="btn" type="submit">Create household</button>
       </form>
     </div>
-    <div id="householdGrid"><p class="empty">Loading…</p></div>
+    <div id="householdGrid" class="household-grid"><div class="skeleton" style="height:130px"></div><div class="skeleton" style="height:130px"></div></div>
   `;
   const r = await fetch('/households');
   const households = await r.json();
@@ -1104,7 +1151,7 @@ async function renderHouseholdList() {
 async function renderHouseholdDetail(id) {
   currentHouseholdId = id;
   const root = document.getElementById('clientsRoot');
-  root.innerHTML = '<p class="empty">Loading…</p>';
+  root.innerHTML = '<div class="skeleton skeleton-stat" style="margin-bottom:20px"></div><div class="skeleton" style="height:200px"></div>';
   const [hr, or_] = await Promise.all([fetch(`/households/${id}`), fetch(`/opportunities/household/${id}`)]);
   if (!hr.ok) { toast('Could not load household.', 'error'); renderHouseholdList(); return; }
   const h = await hr.json();
@@ -1120,7 +1167,7 @@ async function renderHouseholdDetail(id) {
     </div>
 
     <div class="stats">
-      <div class="stat-card"><div class="stat-label">Net Worth</div><div class="stat-value ${h.net_worth >= 0 ? 'up' : 'down'}">${fmt$(h.net_worth)}</div></div>
+      <div class="stat-card"><div class="stat-label">Net Worth</div><div class="stat-value ${h.net_worth >= 0 ? 'up' : 'down'} count-up" id="statNetWorth">$0</div></div>
       <div class="stat-card"><div class="stat-label">Assets</div><div class="stat-value">${fmt$(h.assets)}</div></div>
       <div class="stat-card"><div class="stat-label">Liabilities</div><div class="stat-value">${fmt$(h.liabilities)}</div></div>
       <div class="stat-card"><div class="stat-label">Monthly Cash Flow</div><div class="stat-value ${h.monthlyCashFlow >= 0 ? 'up' : 'down'}">${h.monthlyCashFlow >= 0 ? '+' : ''}${fmt$(h.monthlyCashFlow)}</div></div>
@@ -1262,6 +1309,7 @@ async function renderHouseholdDetail(id) {
         : '<p class="empty">No open opportunities — click Scan.</p>'}</div>
     </div>
   `;
+  animateNumber(document.getElementById('statNetWorth'), Number(h.net_worth), fmt$);
 }
 
 function triStateField(name, label, value) {
