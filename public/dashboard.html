@@ -466,6 +466,12 @@
 
   .term-blotter { padding: 4px 20px 20px; border-top: 1px solid #1c2333; overflow-x: auto; }
   .term-empty { color: #565f78; font-size: 12px; padding: 6px 0; }
+  .term-signals { display: flex; flex-direction: column; gap: 0; }
+  .term-signal-item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #161b28; align-items: baseline; }
+  .term-signal-item:first-child { border-top: none; }
+  .term-signal-agent { font-size: 10.5px; font-weight: 700; color: #c9a35c; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; width: 150px; font-family: 'JetBrains Mono', monospace; }
+  .term-signal-summary { font-size: 12px; color: #b6bccb; line-height: 1.5; font-family: 'Inter', sans-serif; }
+  @media (max-width: 700px) { .term-signal-item { flex-direction: column; gap: 3px; } .term-signal-agent { width: auto; } }
 </style>
 <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
@@ -527,7 +533,7 @@
   <!-- Terminal -->
   <section class="tab-panel" id="tab-terminal">
     <div class="topbar">
-      <div><h1>Terminal</h1><div class="subtitle">Live desk view — same real data as Market/News/Positions, trading-floor style.</div></div>
+      <div><h1>Terminal</h1><div class="subtitle">Live desk view — real quotes, news, your book, and the desk's own findings, trading-floor style.</div></div>
       <button class="btn secondary" id="terminalRefreshBtn">Refresh now</button>
     </div>
     <div class="term-shell">
@@ -555,6 +561,10 @@
           <thead><tr><th>Sym</th><th class="num">Qty</th><th class="num">Value</th><th class="num">Day</th></tr></thead>
           <tbody><tr><td colspan="4" class="term-empty">Loading…</td></tr></tbody>
         </table>
+      </div>
+      <div class="term-blotter">
+        <div class="term-h" style="margin-top:14px">Desk Signals</div>
+        <div class="term-signals" id="termSignals"><div class="term-empty">Loading…</div></div>
       </div>
     </div>
   </section>
@@ -1009,14 +1019,16 @@ function termSign(n) { return n >= 0 ? '+' : ''; }
 
 async function loadTerminal() {
   try {
-    const [quotesR, newsR, posR] = await Promise.all([
+    const [quotesR, newsR, posR, sigR] = await Promise.all([
       fetch('/market/quotes'),
       fetch('/market/news-feed'),
       fetch('/schwab/holdings'),
+      fetch('/analysis'),
     ]);
     const quotesJ = await quotesR.json();
     const newsJ = await newsR.json();
     const posRows = posR.ok ? await posR.json() : [];
+    const sigRows = sigR.ok ? await sigR.json() : [];
 
     if (!quotesR.ok) {
       document.getElementById('termQuoteTable').querySelector('tbody').innerHTML =
@@ -1085,6 +1097,18 @@ async function loadTerminal() {
     } else {
       blotterBody.innerHTML = '<tr><td colspan="4" class="term-empty">No positions synced yet.</td></tr>';
     }
+
+    // Desk Signals — the same recommendations feed as the Recommendations
+    // tab, most recent first, so the terminal reads what the desk is
+    // actually saying right now instead of just raw prices.
+    const signalsEl = document.getElementById('termSignals');
+    const pending = sigRows.filter(r => r.status === 'pending_review').slice(0, 8);
+    signalsEl.innerHTML = pending.length ? pending.map(r => `
+      <div class="term-signal-item">
+        <span class="term-signal-agent">${r.agent}</span>
+        <span class="term-signal-summary">${r.summary}</span>
+      </div>
+    `).join('') : '<div class="term-empty">No open findings — run analysis from the Recommendations tab.</div>';
   } catch (e) {
     document.getElementById('termTapeTrack').innerHTML = `<div class="term-tape-item">Could not reach the server: ${e.message}</div>`;
   }
