@@ -56,7 +56,11 @@
     border-right: 1px solid var(--border-soft);
     display: flex; flex-direction: column;
     padding: 22px 14px;
-    position: sticky; top: 0; height: 100vh;
+    /* Fixed, not sticky — this is a permanent app shell, not a "sticks
+       after scrolling a hero away" element, and fixed sidesteps a
+       sticky-inside-flex quirk where the sidebar just scrolled off with
+       the page instead of staying pinned. */
+    position: fixed; top: 0; left: 0; height: 100vh; z-index: 10;
   }
   .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 26px; }
   .brand .mark {
@@ -85,7 +89,7 @@
   .nav-foot .nav-item { color: var(--dim-2); font-size: 12px; }
 
   /* ---- Main ---- */
-  main { flex: 1; min-width: 0; padding: 28px 36px 60px; max-width: 980px; }
+  main { flex: 1; min-width: 0; margin-left: var(--sidebar-w); padding: 28px 36px 60px; max-width: 980px; }
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
   .topbar h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
   .topbar .subtitle { color: var(--dim); font-size: 12.5px; margin-top: 4px; }
