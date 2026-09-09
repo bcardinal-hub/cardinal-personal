@@ -306,7 +306,7 @@
   </details>
 </div>
 
-<footer>This app never places trades. Every order is placed by you, in Schwab, yourself.</footer>
+<footer>This app never places trades. Every order is placed by you, in your own broker, yourself.</footer>
 
 <script>
 const STEPS = [
@@ -347,7 +347,7 @@ function renderStage(errorMsg) {
     stage.innerHTML = `
       <p class="eyebrow">Step 1 of 3</p>
       <h2>Sign in</h2>
-      <p class="desc">A local account for this app only — separate from your real Schwab login.</p>
+      <p class="desc">A Cardinal Personal account only — separate from your bank or brokerage login.</p>
       ${banner(errorMsg)}
       <input id="email" placeholder="email" autocomplete="username" value="${creds.email}" />
       <input id="password" type="password" placeholder="password" autocomplete="current-password" />
