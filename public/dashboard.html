@@ -387,6 +387,66 @@
     font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
     background: var(--panel-3); color: var(--dim); margin-left: 8px;
   }
+
+  /* ---- Terminal (trading-desk view) ----
+     Deliberately dark/dense — the rest of the app is the calm, white-gold
+     advisor product; this one screen is the "wall street floor" view,
+     same data (Finnhub quotes, real news, real positions), just presented
+     the way an actual trading desk presents it. Scoped entirely under
+     .term- classes so nothing here leaks into the rest of the UI. */
+  .term-shell {
+    background: #0a0d14; border-radius: 16px; border: 1px solid #1c2333;
+    padding: 0; overflow: hidden; color: #d7ddea;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 20px 60px -24px rgba(0,0,0,0.5);
+  }
+  .term-tape {
+    display: flex; white-space: nowrap; overflow: hidden;
+    border-bottom: 1px solid #1c2333; background: #05070c; height: 40px; align-items: center;
+  }
+  .term-tape-track { display: flex; gap: 36px; padding-left: 24px; animation: tapeScroll 38s linear infinite; }
+  .term-tape:hover .term-tape-track { animation-play-state: paused; }
+  @keyframes tapeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .term-tape-item { font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; flex-shrink: 0; }
+  .term-tape-item .tt-sym { color: #8b93a7; margin-right: 7px; }
+  .term-tape-item .tt-up { color: #34d399; }
+  .term-tape-item .tt-down { color: #f5657a; }
+
+  .term-status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid #1c2333; font-size: 11px; color: #8b93a7;
+  }
+  .term-status-row .ts-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 7px; }
+  .term-status-row .ts-live { background: #34d399; box-shadow: 0 0 8px #34d399; animation: tsPulse 1.6s ease-in-out infinite; }
+  @keyframes tsPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .term-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 0; }
+  @media (max-width: 980px) { .term-grid { grid-template-columns: 1fr; } }
+  .term-col { padding: 18px 20px; }
+  .term-col + .term-col { border-left: 1px solid #1c2333; }
+  @media (max-width: 980px) { .term-col + .term-col { border-left: none; border-top: 1px solid #1c2333; } }
+  .term-h { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #565f78; font-weight: 700; margin-bottom: 12px; }
+
+  .term-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .term-table th { text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #565f78; padding: 0 8px 8px; font-weight: 700; }
+  .term-table th.num, .term-table td.num { text-align: right; }
+  .term-table td { padding: 8px; border-top: 1px solid #161b28; font-variant-numeric: tabular-nums; transition: background .3s ease; }
+  .term-table tr:hover td { background: #10141f; }
+  .term-table .tsym { font-weight: 700; color: #e8ecf5; }
+  .term-up { color: #34d399; } .term-down { color: #f5657a; }
+  .term-table td.flash-up { background: rgba(52,211,153,0.18); }
+  .term-table td.flash-down { background: rgba(245,101,122,0.18); }
+
+  .term-news { display: flex; flex-direction: column; gap: 0; max-height: 420px; overflow-y: auto; }
+  .term-news-item { padding: 10px 0; border-top: 1px solid #161b28; }
+  .term-news-item:first-child { border-top: none; }
+  .term-news-item a { color: #d7ddea; font-size: 12px; font-weight: 600; text-decoration: none; line-height: 1.45; font-family: 'Inter', sans-serif; }
+  .term-news-item a:hover { color: #34d399; }
+  .term-news-meta { font-size: 10px; color: #565f78; margin-top: 4px; display: flex; gap: 7px; }
+  .term-news-meta .tn-tick { color: #c9a35c; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+  .term-blotter { padding: 4px 20px 20px; border-top: 1px solid #1c2333; }
+  .term-empty { color: #565f78; font-size: 12px; padding: 6px 0; }
 </style>
 <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
@@ -409,6 +469,7 @@
   <nav id="nav">
     <div class="nav-section">My Portfolio</div>
     <div class="nav-item" data-tab="positions"><span class="ic">◆</span> Positions</div>
+    <div class="nav-item" data-tab="terminal"><span class="ic">▦</span> Terminal</div>
     <div class="nav-item" data-tab="market"><span class="ic">▲</span> Market</div>
     <div class="nav-item" data-tab="news"><span class="ic">▤</span> News</div>
     <div class="nav-item" data-tab="assistant"><span class="ic">✦</span> AI Assistant</div>
@@ -441,6 +502,41 @@
     </div>
     <div class="panel">
       <div id="posTableWrap"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>
+    </div>
+  </section>
+
+  <!-- Terminal -->
+  <section class="tab-panel" id="tab-terminal">
+    <div class="topbar">
+      <div><h1>Terminal</h1><div class="subtitle">Live desk view — same real data as Market/News/Positions, trading-floor style.</div></div>
+      <button class="btn secondary" id="terminalRefreshBtn">Refresh now</button>
+    </div>
+    <div class="term-shell">
+      <div class="term-tape"><div class="term-tape-track" id="termTapeTrack"><div class="term-tape-item">Loading tape…</div></div></div>
+      <div class="term-status-row">
+        <span><span class="ts-dot ts-live"></span>LIVE</span>
+        <span id="termAsOf">—</span>
+      </div>
+      <div class="term-grid">
+        <div class="term-col">
+          <div class="term-h">Watchlist</div>
+          <table class="term-table" id="termQuoteTable">
+            <thead><tr><th>Sym</th><th class="num">Last</th><th class="num">Chg</th><th class="num">Chg %</th></tr></thead>
+            <tbody><tr><td colspan="4" class="term-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="term-col">
+          <div class="term-h">Wire</div>
+          <div class="term-news" id="termNews"><div class="term-empty">Loading…</div></div>
+        </div>
+      </div>
+      <div class="term-blotter">
+        <div class="term-h" style="margin-top:14px">Your Book</div>
+        <table class="term-table" id="termBlotterTable">
+          <thead><tr><th>Sym</th><th class="num">Qty</th><th class="num">Value</th><th class="num">Day</th></tr></thead>
+          <tbody><tr><td colspan="4" class="term-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -605,6 +701,12 @@ function activateTab(tab) {
   if (tab === 'market') {
     loadQuotes(false);
     quotePollTimer = setInterval(() => loadQuotes(false), 45000);
+  }
+  // Terminal polls faster — it's meant to feel live — and only while open.
+  if (termPollTimer) { clearInterval(termPollTimer); termPollTimer = null; }
+  if (tab === 'terminal') {
+    loadTerminal();
+    termPollTimer = setInterval(loadTerminal, 15000);
   }
 
   if (!loaded.has(tab)) {
@@ -876,6 +978,101 @@ document.getElementById('newsRefreshBtn').addEventListener('click', () => {
   const btn = document.getElementById('newsRefreshBtn');
   setBtnLoading(btn, 'Refreshing…');
   loadNewsFeed(true).finally(() => resetBtn(btn));
+});
+
+// ---- Terminal (trading-desk view) ----
+let termPollTimer = null;
+const termPrevPrices = new Map(); // symbol -> last price seen, for flash-on-change
+
+function termChangeCls(n) { return n >= 0 ? 'term-up' : 'term-down'; }
+function termSign(n) { return n >= 0 ? '+' : ''; }
+
+async function loadTerminal() {
+  try {
+    const [quotesR, newsR, posR] = await Promise.all([
+      fetch('/market/quotes'),
+      fetch('/market/news-feed'),
+      fetch('/schwab/holdings'),
+    ]);
+    const quotesJ = await quotesR.json();
+    const newsJ = await newsR.json();
+    const posRows = posR.ok ? await posR.json() : [];
+
+    if (!quotesR.ok) {
+      document.getElementById('termQuoteTable').querySelector('tbody').innerHTML =
+        `<tr><td colspan="4" class="term-empty">${quotesJ.error || 'Live data unavailable.'}</td></tr>`;
+      document.getElementById('termTapeTrack').innerHTML = '<div class="term-tape-item">Live data unavailable.</div>';
+    } else {
+      const all = [...quotesJ.indices, ...quotesJ.holdings.filter(h => !quotesJ.indices.some(i => i.symbol === h.symbol))];
+
+      // Ticker tape — duplicate the row once so the 50%-width scroll loop is seamless.
+      const tapeRow = all.map(q => `
+        <div class="term-tape-item"><span class="tt-sym">${q.label || q.symbol}</span><span class="${q.change >= 0 ? 'tt-up' : 'tt-down'}">$${q.price.toFixed(2)} ${termSign(q.change)}${q.changePct.toFixed(2)}%</span></div>
+      `).join('');
+      document.getElementById('termTapeTrack').innerHTML = tapeRow + tapeRow;
+
+      // Watchlist table with flash-on-change for anyone staring at the screen.
+      const tbody = all.map(q => {
+        const prev = termPrevPrices.get(q.symbol);
+        const flash = prev != null && prev !== q.price ? (q.price > prev ? 'flash-up' : 'flash-down') : '';
+        termPrevPrices.set(q.symbol, q.price);
+        return `
+          <tr>
+            <td class="tsym">${q.label || q.symbol}</td>
+            <td class="num ${flash}">$${q.price.toFixed(2)}</td>
+            <td class="num ${termChangeCls(q.change)}">${termSign(q.change)}${q.change.toFixed(2)}</td>
+            <td class="num ${termChangeCls(q.changePct)}">${termSign(q.changePct)}${q.changePct.toFixed(2)}%</td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="4" class="term-empty">No data.</td></tr>';
+      document.getElementById('termQuoteTable').querySelector('tbody').innerHTML = tbody;
+      // Clear the flash class shortly after paint so it reads as a "blip", not a stuck highlight.
+      setTimeout(() => {
+        document.querySelectorAll('#termQuoteTable .flash-up, #termQuoteTable .flash-down').forEach(el => el.classList.remove('flash-up', 'flash-down'));
+      }, 900);
+
+      document.getElementById('termAsOf').textContent = `Updated ${timeAgo(quotesJ.asOf)}`;
+    }
+
+    // Wire (news)
+    const newsEl = document.getElementById('termNews');
+    if (newsR.ok && newsJ.articles.length) {
+      newsEl.innerHTML = newsJ.articles.slice(0, 14).map(a => `
+        <div class="term-news-item">
+          <a href="${a.url}" target="_blank" rel="noopener">${a.headline}</a>
+          <div class="term-news-meta">${a.ticker ? `<span class="tn-tick">${a.ticker}</span>` : ''}<span>${a.source || ''}</span><span>${timeAgo(a.datetime)}</span></div>
+        </div>
+      `).join('');
+    } else {
+      newsEl.innerHTML = `<div class="term-empty">${newsJ.error || 'No wire data.'}</div>`;
+    }
+
+    // Book (positions blotter)
+    const blotterBody = document.getElementById('termBlotterTable').querySelector('tbody');
+    if (posRows.length) {
+      blotterBody.innerHTML = posRows.map(h => {
+        const dc = h.day_change != null ? Number(h.day_change) : null;
+        const dp = h.day_change_pct != null ? Number(h.day_change_pct) : null;
+        return `
+          <tr>
+            <td class="tsym">${h.ticker}</td>
+            <td class="num">${fmtNum(h.quantity)}</td>
+            <td class="num">${fmt$(h.market_value)}</td>
+            <td class="num ${dc == null ? '' : termChangeCls(dc)}">${dc == null ? '—' : `${termSign(dc)}${fmt$(dc)}${dp != null ? ` (${termSign(dp)}${dp.toFixed(2)}%)` : ''}`}</td>
+          </tr>
+        `;
+      }).join('');
+    } else {
+      blotterBody.innerHTML = '<tr><td colspan="4" class="term-empty">No positions synced yet.</td></tr>';
+    }
+  } catch (e) {
+    document.getElementById('termTapeTrack').innerHTML = `<div class="term-tape-item">Could not reach the server: ${e.message}</div>`;
+  }
+}
+document.getElementById('terminalRefreshBtn').addEventListener('click', () => {
+  const btn = document.getElementById('terminalRefreshBtn');
+  setBtnLoading(btn, 'Refreshing…');
+  loadTerminal().finally(() => resetBtn(btn));
 });
 
 // ---- AI Assistant ----
