@@ -7,6 +7,20 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Monthly subscription billing via Stripe. status is refreshed both by the
+-- webhook (lib/stripe.js) and on-demand whenever /billing/status is read,
+-- so it stays accurate even before a webhook is fully configured.
+CREATE TABLE subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  stripe_customer_id TEXT NOT NULL,
+  stripe_subscription_id TEXT,
+  status TEXT NOT NULL DEFAULT 'none' CHECK (status IN ('none', 'trialing', 'active', 'past_due', 'canceled', 'incomplete')),
+  current_period_end TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Schwab OAuth tokens, one row per user per connected Schwab account.
 -- access_token expires in ~30 minutes; refresh it on each use and update
 -- this row. access_token/refresh_token are encrypted at rest with

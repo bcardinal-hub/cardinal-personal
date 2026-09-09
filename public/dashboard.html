@@ -418,6 +418,7 @@
     <div class="nav-item" data-tab="clients"><span class="ic">◈</span> Clients</div>
   </nav>
   <div class="nav-foot">
+    <div class="nav-item" data-tab="billing"><span class="ic">$</span> Billing</div>
     <div class="nav-item" id="signOutBtn"><span class="ic">↩</span> Sign out</div>
   </div>
 </div>
@@ -523,6 +524,14 @@
   <section class="tab-panel" id="tab-clients">
     <div id="clientsRoot"></div>
   </section>
+
+  <!-- Billing -->
+  <section class="tab-panel" id="tab-billing">
+    <div class="topbar">
+      <div><h1>Billing</h1><div class="subtitle">Manage your Cardinal Personal subscription.</div></div>
+    </div>
+    <div id="billingRoot"><div class="skeleton skeleton-stat"></div></div>
+  </section>
 </main>
 
 <div class="toast-stack" id="toastStack"></div>
@@ -599,6 +608,7 @@ function activateTab(tab) {
     if (tab === 'assistant') loadChat();
     if (tab === 'recommendations') loadRecommendations();
     if (tab === 'clients') renderHouseholdList();
+    if (tab === 'billing') loadBilling();
     if (tab === 'opportunities') loadPersonalOpportunities();
   }
 }
@@ -1099,6 +1109,52 @@ document.getElementById('oppList').addEventListener('click', async (e) => {
   }
 });
 
+// ---- Billing ----
+const STATUS_LABELS = {
+  none: 'No active subscription', trialing: 'Trial', active: 'Active',
+  past_due: 'Payment past due', canceled: 'Cancelled', incomplete: 'Incomplete',
+};
+async function loadBilling() {
+  const root = document.getElementById('billingRoot');
+  try {
+    const r = await fetch('/billing/status');
+    const j = await r.json();
+    if (!r.ok) { root.innerHTML = `<p class="empty">${j.error || 'Billing unavailable.'}</p>`; return; }
+
+    const isActive = j.status === 'active' || j.status === 'trialing';
+    root.innerHTML = `
+      <div class="panel">
+        <div class="stat-label" style="margin-bottom:10px">Plan</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+          <div>
+            <div style="font-size:20px;font-weight:750">Cardinal Personal — $29/mo</div>
+            <div style="color:var(--dim);font-size:13px;margin-top:4px">
+              <span class="status-badge ${isActive ? 'approved' : j.status === 'past_due' ? 'rejected' : ''}" style="${!isActive && j.status !== 'past_due' ? 'background:var(--panel-3);color:var(--dim)' : ''}">${STATUS_LABELS[j.status] || j.status}</span>
+              ${j.currentPeriodEnd ? ` · renews ${new Date(j.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+            </div>
+          </div>
+          <button class="btn" id="billingActionBtn">${isActive ? 'Manage billing' : 'Subscribe'}</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('billingActionBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('billingActionBtn');
+      setBtnLoading(btn, 'Loading…');
+      try {
+        const res = await fetch(isActive ? '/billing/portal' : '/billing/checkout', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Could not start billing.', 'error'); resetBtn(btn); return; }
+        location.href = data.url;
+      } catch (e) {
+        toast('Could not reach the server: ' + e.message, 'error');
+        resetBtn(btn);
+      }
+    });
+  } catch (e) {
+    root.innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+
 // ---- Clients / Households ----
 const CATEGORY_LABELS = {
   cash: 'Cash', brokerage: 'Brokerage', '401k': '401(k)', ira: 'IRA', roth_ira: 'Roth IRA',
@@ -1468,7 +1524,15 @@ let appStatus = {};
     return;
   }
   const initial = location.hash.replace('#', '') || 'positions';
-  activateTab(['positions', 'market', 'news', 'assistant', 'recommendations', 'opportunities', 'clients'].includes(initial) ? initial : 'positions');
+  activateTab(['positions', 'market', 'news', 'assistant', 'recommendations', 'opportunities', 'clients', 'billing'].includes(initial) ? initial : 'positions');
+
+  // Stripe redirects back here after Checkout with ?billing=success/cancelled
+  const billingResult = new URLSearchParams(location.search).get('billing');
+  if (billingResult) {
+    history.replaceState({}, '', location.pathname + location.hash);
+    if (billingResult === 'success') toast('Subscription active — welcome aboard!', 'success');
+    if (billingResult === 'cancelled') toast('Checkout cancelled — no charge made.', 'error');
+  }
 })();
 </script>
 </body>

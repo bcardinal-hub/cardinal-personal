@@ -22,6 +22,7 @@ import chatRoutes from "./routes/chat.js";
 import householdsRoutes from "./routes/households.js";
 import opportunitiesRoutes from "./routes/opportunities.js";
 import plaidRoutes from "./routes/plaid.js";
+import billingRoutes, { webhookHandler } from "./routes/billing.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -47,6 +48,16 @@ export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 const app = express();
 if (isProduction) app.set("trust proxy", 1);
+
+// Stripe's webhook needs the raw, unparsed request body to verify the
+// signature — must be registered before express.json() touches the body,
+// and needs req.db attached manually since the shared req.db middleware
+// below also comes after this.
+app.post("/billing/webhook", express.raw({ type: "application/json" }), (req, res, next) => {
+  req.db = pool;
+  next();
+}, webhookHandler);
+
 app.use(express.json());
 app.use(
   session({
@@ -80,6 +91,7 @@ app.use("/ai", requireLogin, chatRoutes);
 app.use("/households", requireLogin, householdsRoutes);
 app.use("/opportunities", requireLogin, opportunitiesRoutes);
 app.use("/plaid", requireLogin, plaidRoutes);
+app.use("/billing", requireLogin, billingRoutes);
 
 // Minimal test UI (public/index.html) — signup/login forms and buttons that
 // drive the same API routes above. Not a real dashboard, just enough to
