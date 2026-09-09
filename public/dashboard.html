@@ -256,6 +256,21 @@
   .status-badge.rejected { background: var(--danger-glow); color: var(--danger); }
   .status-badge.edited { background: rgba(156,122,60,0.14); color: var(--gold); }
 
+  /* ---- Meet the desk ---- */
+  .desk-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .desk-card {
+    display: flex; gap: 11px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 13px 14px;
+  }
+  .desk-avatar {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(160deg, var(--accent-2), var(--navy) 130%);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 13px;
+  }
+  .desk-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+  .desk-blurb { font-size: 11px; color: var(--dim-2); margin-top: 2px; line-height: 1.4; }
+
   /* ---- Filter chips ---- */
   .filter-row { display: flex; gap: 8px; margin-bottom: 16px; }
   .filter-chip {
@@ -585,9 +600,10 @@
   <!-- Recommendations -->
   <section class="tab-panel" id="tab-recommendations">
     <div class="topbar">
-      <div><h1>Recommendations</h1><div class="subtitle">Five agents review your synced holdings. Nothing here acts automatically.</div></div>
+      <div><h1>Recommendations</h1><div class="subtitle">Seven specialists review your synced holdings. Nothing here acts automatically.</div></div>
       <button class="btn" id="runAnalysisBtn">Run analysis</button>
     </div>
+    <div class="desk-roster" id="deskRoster"></div>
     <div class="filter-row">
       <span class="filter-chip active" data-filter="pending">Pending review</span>
       <span class="filter-chip" data-filter="all">All history</span>
@@ -1138,6 +1154,32 @@ async function sendChat() {
 }
 document.getElementById('chatSendBtn').addEventListener('click', sendChat);
 document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+// ---- Meet the desk ----
+// Static roster mirroring the backend team (lib/claude.js AGENTS, plus the
+// trade-idea/options/market desks that live in other tabs) — purely
+// presentational, reinforces "a full research desk, not one chatbot."
+const DESK_ROSTER = [
+  { initials: 'ER', title: 'Head of Equity Research', blurb: 'Fundamentals — earnings, margins, valuation.' },
+  { initials: 'NC', title: 'News & Catalyst Desk', blurb: 'Real-time news flow on what you hold.' },
+  { initials: 'SD', title: 'Sentiment Desk', blurb: 'Reads whether sentiment looks stretched.' },
+  { initials: 'TS', title: 'Technical Strategist', blurb: 'Price action vs. range and benchmarks.' },
+  { initials: 'PS', title: 'Chief Portfolio Strategist', blurb: 'Concentration, diversification, cash levels.' },
+  { initials: 'RO', title: 'Chief Risk Officer', blurb: 'Flags what could go wrong, not just what looks good.' },
+  { initials: 'TX', title: 'Tax Strategist', blurb: 'Loss harvesting and gains-timing framing.' },
+  { initials: 'TD', title: 'Trade Ideas Desk', blurb: 'Scans for setups worth a look — see Opportunities.' },
+  { initials: 'OS', title: 'Options Strategist', blurb: 'Strategy-level options ideas — see Opportunities.' },
+  { initials: 'MS', title: 'Market Strategist', blurb: 'Daily tape roundup — see Market.' },
+];
+function renderDeskRoster() {
+  document.getElementById('deskRoster').innerHTML = DESK_ROSTER.map(d => `
+    <div class="desk-card">
+      <div class="desk-avatar">${d.initials}</div>
+      <div><div class="desk-title">${d.title}</div><div class="desk-blurb">${d.blurb}</div></div>
+    </div>
+  `).join('');
+}
+renderDeskRoster();
 
 // ---- Recommendations ----
 let allRecommendations = [];
