@@ -2,8 +2,22 @@ import express from "express";
 import { runMarketSnapshot } from "../lib/claude.js";
 import { INDEX_PROXIES, WATCHLIST, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
 import { requireSubscription } from "../lib/paywall.js";
+import { cooldown } from "../lib/cooldown.js";
 
 const router = express.Router();
+
+// Snapshots are shared instance-wide (see the comment on /:kind below) —
+// one person mashing Refresh spends every subscriber's shared Claude
+// budget, so this cooldown matters more than the per-user ones elsewhere.
+const refreshCooldown = cooldown({
+  minutes: 5,
+  label: "Refresh",
+  query: (req) =>
+    req.db.query(
+      "SELECT created_at FROM market_snapshots WHERE kind = $1 ORDER BY created_at DESC LIMIT 1",
+      [req.params.kind]
+    ),
+});
 const VALID_KINDS = new Set(["overview", "news"]);
 
 function checkKind(req, res, next) {
@@ -84,7 +98,7 @@ router.get("/:kind", checkKind, async (req, res) => {
 // Gated even though the snapshot is shared instance-wide: without this, a
 // free account could spend the whole instance's Claude budget just by
 // mashing Refresh.
-router.post("/:kind/refresh", requireSubscription, checkKind, async (req, res) => {
+router.post("/:kind/refresh", requireSubscription, checkKind, refreshCooldown, async (req, res) => {
   try {
     const summary = await runMarketSnapshot(req.params.kind);
     const { rows } = await req.db.query(

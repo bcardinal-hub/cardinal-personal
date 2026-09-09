@@ -1,14 +1,27 @@
 import express from "express";
 import { runAgent, AGENTS } from "../lib/claude.js";
 import { requireSubscription } from "../lib/paywall.js";
+import { cooldown } from "../lib/cooldown.js";
 
 const router = express.Router();
+
+// Every run is 7 concurrent Claude calls (several with web search) — cheap
+// for one click, not cheap if someone mashes the button. 10 minutes is
+// generous for a real research cadence, tight enough to cap the damage.
+const analysisCooldown = cooldown({
+  minutes: 10,
+  label: "Analysis",
+  query: (req) =>
+    req.db.query("SELECT created_at FROM recommendations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1", [
+      req.session.userId,
+    ]),
+});
 
 // Runs all agents over the user's currently-synced holdings and stores each
 // result as a pending_review recommendation — nothing here auto-approves
 // or acts on anything. This is the actual paid feature — reviewing past
 // results (GET /) stays free.
-router.post("/run", requireSubscription, async (req, res) => {
+router.post("/run", requireSubscription, analysisCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   if (holdings.length === 0) {
     return res.status(400).json({ error: "No holdings on file yet — run /schwab/sync first." });

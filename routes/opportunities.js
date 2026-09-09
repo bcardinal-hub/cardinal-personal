@@ -3,8 +3,32 @@ import { scanHousehold, scanPersonalPortfolio } from "../lib/opportunityEngine.j
 import { scanForTradeIdeas } from "../lib/tradeIdeas.js";
 import { scanForOptionsIdeas } from "../lib/optionsIdeas.js";
 import { requireSubscription } from "../lib/paywall.js";
+import { cooldown } from "../lib/cooldown.js";
 
 const router = express.Router();
+
+// The deterministic checks are free to re-run, but the AI legs (trade
+// ideas, options ideas) each spend a web-search-enabled Claude call —
+// same unit-economics guard as /analysis/run.
+const personalScanCooldown = cooldown({
+  minutes: 10,
+  label: "Personal opportunity scan",
+  query: (req) =>
+    req.db.query(
+      "SELECT created_at FROM opportunities WHERE user_id = $1 AND household_id IS NULL ORDER BY created_at DESC LIMIT 1",
+      [req.session.userId]
+    ),
+});
+const optionsScanCooldown = cooldown({
+  minutes: 10,
+  label: "Options scan",
+  query: (req) =>
+    req.db.query(
+      "SELECT created_at FROM opportunities WHERE user_id = $1 AND household_id IS NULL AND category LIKE 'Options Idea%' ORDER BY created_at DESC LIMIT 1",
+      [req.session.userId]
+    ),
+});
+const HOUSEHOLD_COOLDOWN_MINUTES = 10;
 
 async function insertOpportunities(db, userId, householdId, found, source = "deterministic") {
   const inserted = [];
@@ -32,6 +56,9 @@ async function insertOpportunities(db, userId, householdId, found, source = "det
 }
 
 // ---- Household-scoped ----
+// Cooldown is checked inline, after ownership is verified — the check
+// itself reveals a household's scan timing, so it must never run before
+// we've confirmed this advisor actually owns it.
 router.post("/scan/household/:householdId", requireSubscription, async (req, res) => {
   const { rows: hhRows } = await req.db.query("SELECT * FROM households WHERE id = $1 AND advisor_id = $2", [
     req.params.householdId,
@@ -39,6 +66,17 @@ router.post("/scan/household/:householdId", requireSubscription, async (req, res
   ]);
   const household = hhRows[0];
   if (!household) return res.status(404).json({ error: "Household not found." });
+
+  const { rows: lastScan } = await req.db.query(
+    "SELECT created_at FROM opportunities WHERE household_id = $1 ORDER BY created_at DESC LIMIT 1",
+    [household.id]
+  );
+  const elapsedMs = lastScan[0] ? Date.now() - new Date(lastScan[0].created_at).getTime() : Infinity;
+  const waitMs = HOUSEHOLD_COOLDOWN_MINUTES * 60 * 1000 - elapsedMs;
+  if (waitMs > 0) {
+    const waitMin = Math.max(1, Math.ceil(waitMs / 60000));
+    return res.status(429).json({ error: `Household opportunity scan was run recently — try again in about ${waitMin} minute${waitMin === 1 ? "" : "s"}.` });
+  }
 
   const [{ rows: clients }, { rows: accounts }, { rows: cashFlow }] = await Promise.all([
     req.db.query("SELECT * FROM clients WHERE household_id = $1", [household.id]),
@@ -65,7 +103,7 @@ router.get("/household/:householdId", async (req, res) => {
 // "this is math" with "this is a model's opinion." The AI leg can fail
 // independently (web search hiccup, rate limit, etc.) without losing the
 // deterministic results.
-router.post("/scan/personal", requireSubscription, async (req, res) => {
+router.post("/scan/personal", requireSubscription, personalScanCooldown, async (req, res) => {
   const [{ rows: holdings }, { rows: recommendations }] = await Promise.all([
     req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]),
     req.db.query("SELECT * FROM recommendations WHERE user_id = $1", [req.session.userId]),
@@ -99,7 +137,7 @@ router.get("/personal", async (req, res) => {
 // risk than the general trade ideas (leverage, assignment, time decay,
 // and brokers gate options behind their own approval tier), so this never
 // runs silently bundled into the general scan.
-router.post("/scan/options", requireSubscription, async (req, res) => {
+router.post("/scan/options", requireSubscription, optionsScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
     const found = await scanForOptionsIdeas(holdings);
