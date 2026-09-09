@@ -2,6 +2,7 @@ import express from "express";
 import { scanHousehold, scanPersonalPortfolio } from "../lib/opportunityEngine.js";
 import { scanForTradeIdeas } from "../lib/tradeIdeas.js";
 import { scanForOptionsIdeas } from "../lib/optionsIdeas.js";
+import { requireSubscription } from "../lib/paywall.js";
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ async function insertOpportunities(db, userId, householdId, found, source = "det
 }
 
 // ---- Household-scoped ----
-router.post("/scan/household/:householdId", async (req, res) => {
+router.post("/scan/household/:householdId", requireSubscription, async (req, res) => {
   const { rows: hhRows } = await req.db.query("SELECT * FROM households WHERE id = $1 AND advisor_id = $2", [
     req.params.householdId,
     req.session.userId,
@@ -64,7 +65,7 @@ router.get("/household/:householdId", async (req, res) => {
 // "this is math" with "this is a model's opinion." The AI leg can fail
 // independently (web search hiccup, rate limit, etc.) without losing the
 // deterministic results.
-router.post("/scan/personal", async (req, res) => {
+router.post("/scan/personal", requireSubscription, async (req, res) => {
   const [{ rows: holdings }, { rows: recommendations }] = await Promise.all([
     req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]),
     req.db.query("SELECT * FROM recommendations WHERE user_id = $1", [req.session.userId]),
@@ -98,7 +99,7 @@ router.get("/personal", async (req, res) => {
 // risk than the general trade ideas (leverage, assignment, time decay,
 // and brokers gate options behind their own approval tier), so this never
 // runs silently bundled into the general scan.
-router.post("/scan/options", async (req, res) => {
+router.post("/scan/options", requireSubscription, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
     const found = await scanForOptionsIdeas(holdings);

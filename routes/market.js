@@ -1,6 +1,7 @@
 import express from "express";
 import { runMarketSnapshot } from "../lib/claude.js";
 import { INDEX_PROXIES, WATCHLIST, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
+import { requireSubscription } from "../lib/paywall.js";
 
 const router = express.Router();
 const VALID_KINDS = new Set(["overview", "news"]);
@@ -80,7 +81,10 @@ router.get("/:kind", checkKind, async (req, res) => {
 
 // Explicit, human-triggered refresh — this is the only thing that spends an
 // API call here, same "nothing happens silently" rule as /analysis/run.
-router.post("/:kind/refresh", checkKind, async (req, res) => {
+// Gated even though the snapshot is shared instance-wide: without this, a
+// free account could spend the whole instance's Claude budget just by
+// mashing Refresh.
+router.post("/:kind/refresh", requireSubscription, checkKind, async (req, res) => {
   try {
     const summary = await runMarketSnapshot(req.params.kind);
     const { rows } = await req.db.query(

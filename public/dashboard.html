@@ -555,6 +555,13 @@ function toast(message, kind = 'error') {
   const el = document.createElement('div');
   el.className = 'toast ' + kind;
   el.textContent = message;
+  // Paywall responses are the one error worth making actionable — jump
+  // straight to Billing instead of making the person hunt for it.
+  if (/subscription/i.test(message)) {
+    el.style.cursor = 'pointer';
+    el.title = 'Click to go to Billing';
+    el.addEventListener('click', () => { activateTab('billing'); el.remove(); });
+  }
   stack.appendChild(el);
   setTimeout(() => el.remove(), kind === 'error' ? 6000 : 3500);
 }

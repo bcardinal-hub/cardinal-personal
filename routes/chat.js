@@ -1,5 +1,6 @@
 import express from "express";
 import { runChatTurn } from "../lib/claude.js";
+import { requireSubscription } from "../lib/paywall.js";
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get("/chat", async (req, res) => {
   res.json(rows);
 });
 
-router.post("/chat", async (req, res) => {
+router.post("/chat", requireSubscription, async (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) return res.status(400).json({ error: "Message required." });
 

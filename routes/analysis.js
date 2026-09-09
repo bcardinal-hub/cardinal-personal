@@ -1,12 +1,14 @@
 import express from "express";
 import { runAgent, AGENTS } from "../lib/claude.js";
+import { requireSubscription } from "../lib/paywall.js";
 
 const router = express.Router();
 
 // Runs all agents over the user's currently-synced holdings and stores each
 // result as a pending_review recommendation — nothing here auto-approves
-// or acts on anything.
-router.post("/run", async (req, res) => {
+// or acts on anything. This is the actual paid feature — reviewing past
+// results (GET /) stays free.
+router.post("/run", requireSubscription, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   if (holdings.length === 0) {
     return res.status(400).json({ error: "No holdings on file yet — run /schwab/sync first." });
