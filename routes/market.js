@@ -1,6 +1,6 @@
 import express from "express";
 import { runMarketSnapshot } from "../lib/claude.js";
-import { INDEX_PROXIES, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
+import { INDEX_PROXIES, WATCHLIST, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
 
 const router = express.Router();
 const VALID_KINDS = new Set(["overview", "news"]);
@@ -21,13 +21,18 @@ router.get("/quotes", async (req, res) => {
       [req.session.userId]
     );
     const holdingSymbols = holdings.map((h) => h.ticker).filter((t) => /^[A-Z.]{1,6}$/.test(t)); // skip option/OTC-style symbols Finnhub won't resolve
-    const [indices, yours] = await Promise.all([
+    const [indices, watchlist, yours] = await Promise.all([
       getQuotes(INDEX_PROXIES.map((i) => i.symbol)),
+      getQuotes(WATCHLIST),
       getQuotes(holdingSymbols),
     ]);
     const labelBySymbol = Object.fromEntries(INDEX_PROXIES.map((i) => [i.symbol, i.label]));
+    const allIndices = [
+      ...indices.map((q) => ({ ...q, label: labelBySymbol[q.symbol] })),
+      ...watchlist.map((q) => ({ ...q, label: q.symbol })),
+    ];
     res.json({
-      indices: indices.map((q) => ({ ...q, label: labelBySymbol[q.symbol] })),
+      indices: allIndices,
       holdings: yours,
       asOf: new Date().toISOString(),
     });
