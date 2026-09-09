@@ -1140,9 +1140,10 @@ async function loadBilling() {
               ${j.currentPeriodEnd ? ` · renews ${new Date(j.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
             </div>
           </div>
-          <button class="btn" id="billingActionBtn">${isActive ? 'Manage billing' : 'Subscribe'}</button>
+          <button class="btn" id="billingActionBtn">${isActive ? 'Manage billing' : j.status === 'none' ? 'Start 7-day free trial' : 'Subscribe'}</button>
         </div>
       </div>
+      ${!isActive ? '<p class="empty" style="margin-top:14px">Analysis, Opportunities, and the AI Assistant require an active subscription. Positions, Market, News, and Clients stay free.</p>' : ''}
     `;
     document.getElementById('billingActionBtn').addEventListener('click', async () => {
       const btn = document.getElementById('billingActionBtn');

@@ -23,11 +23,18 @@ router.post("/checkout", async (req, res) => {
   try {
     const { rows } = await req.db.query("SELECT email FROM users WHERE id = $1", [req.session.userId]);
     const customerId = await getOrCreateCustomerId(req.db, req.session.userId, rows[0].email);
+
+    // First-time subscribers get a 7-day free trial; someone re-subscribing
+    // after a previous cancellation doesn't get a second one.
+    const { rows: subRows } = await req.db.query("SELECT status FROM subscriptions WHERE user_id = $1", [req.session.userId]);
+    const trialDays = subRows[0]?.status === "none" ? 7 : 0;
+
     const origin = `${req.protocol}://${req.get("host")}`;
     const session = await createCheckoutSession(
       customerId,
       `${origin}/dashboard.html?billing=success#billing`,
-      `${origin}/dashboard.html?billing=cancelled#billing`
+      `${origin}/dashboard.html?billing=cancelled#billing`,
+      trialDays
     );
     res.json({ url: session.url });
   } catch (e) {
