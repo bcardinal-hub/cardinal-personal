@@ -4,6 +4,12 @@ import path from "path";
 import https from "https";
 import { fileURLToPath } from "url";
 import express from "express";
+// Must be imported right after express, before any routes are defined — it
+// patches Router methods so a rejected promise in an `async` route handler
+// calls next(err) instead of becoming an unhandled rejection that crashes
+// the whole process (Express 4 doesn't do this on its own; Express 5 does,
+// but upgrading is a bigger change than this fix warrants right now).
+import "express-async-errors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
@@ -94,6 +100,23 @@ app.get("/api/status", async (req, res) => {
     schwabConnected: conn.length > 0,
     hasHoldings: holdings.length > 0,
   });
+});
+
+// Catches anything express-async-errors forwards, and anything a route
+// passed to next(err) directly. Always last. Never crashes the process —
+// that's the whole point.
+app.use((err, req, res, next) => {
+  console.error("Unhandled route error:", err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "Something went wrong on our end. Please try again." });
+});
+
+// Defense in depth: if something still slips past the above (e.g. a
+// rejection outside a request, like an unawaited background call), log it
+// instead of letting Node kill the whole process and take every user down
+// with it.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
 });
 
 const port = process.env.PORT || 3000;
