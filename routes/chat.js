@@ -22,14 +22,21 @@ router.post("/chat", requireSubscription, async (req, res) => {
       message,
     ]);
 
-    const [{ rows: history }, { rows: holdings }] = await Promise.all([
+    const [{ rows: history }, { rows: holdings }, { rows: recommendations }] = await Promise.all([
       req.db.query("SELECT role, content FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC", [
         req.session.userId,
       ]),
       req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]),
+      // Recent desk findings — lets the assistant reference what the other
+      // specialists already flagged instead of re-deriving it from scratch
+      // or contradicting them.
+      req.db.query(
+        "SELECT agent, summary FROM recommendations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10",
+        [req.session.userId]
+      ),
     ]);
 
-    const reply = await runChatTurn(history, holdings);
+    const reply = await runChatTurn(history, holdings, recommendations);
 
     const { rows: inserted } = await req.db.query(
       "INSERT INTO chat_messages (user_id, role, content) VALUES ($1, 'assistant', $2) RETURNING role, content, created_at",
