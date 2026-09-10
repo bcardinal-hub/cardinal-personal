@@ -3,9 +3,11 @@ import {
   getOrCreateCustomerId,
   createCheckoutSession,
   createPortalSession,
+  changeSubscriptionPlan,
   syncSubscriptionStatus,
   updateFromWebhookEvent,
   constructWebhookEvent,
+  PLAN_PRICE_IDS,
 } from "../lib/stripe.js";
 
 const router = express.Router();
@@ -21,6 +23,10 @@ router.get("/status", async (req, res) => {
 
 router.post("/checkout", async (req, res) => {
   try {
+    const plan = req.body?.plan === "pro" ? "pro" : "standard";
+    const priceId = PLAN_PRICE_IDS[plan];
+    if (!priceId) return res.status(500).json({ error: `Billing isn't configured for the ${plan} plan yet.` });
+
     const { rows } = await req.db.query("SELECT email FROM users WHERE id = $1", [req.session.userId]);
     const customerId = await getOrCreateCustomerId(req.db, req.session.userId, rows[0].email);
 
@@ -34,9 +40,38 @@ router.post("/checkout", async (req, res) => {
       customerId,
       `${origin}/dashboard.html?billing=success#billing`,
       `${origin}/dashboard.html?billing=cancelled#billing`,
-      trialDays
+      trialDays,
+      priceId
     );
     res.json({ url: session.url });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Switches an already-active subscription between Standard and Pro in
+// place — no new Checkout session, no re-entering a card. Stripe prorates
+// the difference automatically.
+router.post("/change-plan", async (req, res) => {
+  try {
+    const plan = req.body?.plan === "pro" ? "pro" : "standard";
+    const priceId = PLAN_PRICE_IDS[plan];
+    if (!priceId) return res.status(500).json({ error: `Billing isn't configured for the ${plan} plan yet.` });
+
+    const { rows } = await req.db.query(
+      "SELECT stripe_subscription_id, status FROM subscriptions WHERE user_id = $1",
+      [req.session.userId]
+    );
+    const sub = rows[0];
+    if (!sub?.stripe_subscription_id || (sub.status !== "active" && sub.status !== "trialing")) {
+      return res.status(400).json({ error: "No active subscription to change — subscribe first." });
+    }
+
+    await changeSubscriptionPlan(sub.stripe_subscription_id, priceId);
+    // Reflect the change immediately rather than waiting on the webhook —
+    // same "resync on the action that just happened" pattern as checkout.
+    const result = await syncSubscriptionStatus(req.db, req.session.userId);
+    res.json({ ok: true, ...result });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

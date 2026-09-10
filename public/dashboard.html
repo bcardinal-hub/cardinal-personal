@@ -230,6 +230,8 @@
   .pill.source-ai { background: rgba(156,122,60,0.14); color: var(--gold); }
   .rec-card.ai-idea { border-left: 3px solid var(--accent-2); }
   .rec-card.high-risk-idea { border-left: 3px solid var(--danger); }
+  .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 560px) { .plan-grid { grid-template-columns: 1fr; } }
   .opp-badges { display: flex; gap: 6px; align-items: center; }
   .opp-impact { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
   .opp-impact.negative { color: var(--danger); }
@@ -717,18 +719,18 @@
 
     <div class="panel" style="margin-top:24px">
       <div class="detail-section-head">
-        <h3>Options Strategy Ideas</h3>
+        <h3>Options Strategy Ideas <span class="pill medium" style="margin-left:6px">Pro</span></h3>
         <button class="btn secondary" id="scanOptionsBtn" style="padding:8px 14px;font-size:12px">Scan for options ideas</button>
       </div>
-      <p class="opp-next-step" style="margin-top:0">⚑ Options carry meaningfully more risk than the ideas above — leverage, time decay, assignment — and your broker requires separate approval to trade them. These are strategy-level research prompts only, never specific strikes or premiums (no live options-chain data feeds this). Look up real pricing yourself before doing anything.</p>
+      <p class="opp-next-step" style="margin-top:0">⚑ Options carry meaningfully more risk than the ideas above — leverage, time decay, assignment — and your broker requires separate approval to trade them. These are strategy-level research prompts only, never specific strikes or premiums (no live options-chain data feeds this). Look up real pricing yourself before doing anything. Requires the Pro plan ($40/mo).</p>
     </div>
 
     <div class="panel" style="margin-top:24px;border-color:rgba(173,61,61,0.3)">
       <div class="detail-section-head">
-        <h3 style="color:var(--danger)">Day Trading Setups</h3>
+        <h3 style="color:var(--danger)">Day Trading Setups <span class="pill medium" style="margin-left:6px">Pro</span></h3>
         <button class="btn secondary" id="scanDayTradingBtn" style="padding:8px 14px;font-size:12px;border-color:rgba(173,61,61,0.35);color:var(--danger)">Scan for setups</button>
       </div>
-      <p class="opp-next-step" style="margin-top:0;border-left-color:var(--danger);background:var(--danger-glow)">⚑ This is the highest-risk category of idea this app produces. Most retail day traders lose money over time — this isn't a disclaimer to skip past, it's the actual base rate. There's no live intraday data feeding this: "watch for" levels are real, searched technical context, never live ticks, and never a directive to buy or sell at a specific time. Verify everything against real-time charts yourself before acting on anything here.</p>
+      <p class="opp-next-step" style="margin-top:0;border-left-color:var(--danger);background:var(--danger-glow)">⚑ This is the highest-risk category of idea this app produces. Most retail day traders lose money over time — this isn't a disclaimer to skip past, it's the actual base rate. There's no live intraday data feeding this: "watch for" levels are real, searched technical context, never live ticks, and never a directive to buy or sell at a specific time. Verify everything against real-time charts yourself before acting on anything here. Requires the Pro plan ($40/mo).</p>
     </div>
   </section>
 
@@ -1705,29 +1707,72 @@ async function loadBilling() {
     if (!r.ok) { root.innerHTML = `<p class="empty">${j.error || 'Billing unavailable.'}</p>`; return; }
 
     const isActive = j.status === 'active' || j.status === 'trialing';
+    const currentPlan = isActive ? (j.plan || 'standard') : null;
+    const PLANS = [
+      { id: 'standard', name: 'Standard', price: 29, blurb: 'The full research desk — 7 analysis agents, Trade Ideas, Terminal, live market data.' },
+      { id: 'pro', name: 'Pro', price: 40, blurb: 'Everything in Standard, plus the Options Strategist and the Day Trading Desk (highest-risk, opt-in ideas).' },
+    ];
+
     root.innerHTML = `
-      <div class="panel">
-        <div class="stat-label" style="margin-bottom:10px">Plan</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-          <div>
-            <div style="font-size:20px;font-weight:750">Cardinal Personal — $29/mo</div>
-            <div style="color:var(--dim);font-size:13px;margin-top:4px">
-              <span class="status-badge ${isActive ? 'approved' : j.status === 'past_due' ? 'rejected' : ''}" style="${!isActive && j.status !== 'past_due' ? 'background:var(--panel-3);color:var(--dim)' : ''}">${STATUS_LABELS[j.status] || j.status}</span>
-              ${j.currentPeriodEnd ? ` · renews ${new Date(j.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+      <div class="plan-grid">
+        ${PLANS.map(p => `
+          <div class="panel" style="margin-bottom:0;${currentPlan === p.id ? 'border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)' : ''}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-size:16px;font-weight:750">${p.name}</div>
+              ${currentPlan === p.id ? '<span class="pill high">current</span>' : ''}
             </div>
+            <div style="font-size:24px;font-weight:750;margin-bottom:8px">$${p.price}<span style="font-size:12px;color:var(--dim-2);font-weight:600"> /mo</span></div>
+            <div style="font-size:12.5px;color:var(--dim);margin-bottom:14px;line-height:1.5">${p.blurb}</div>
+            <button class="btn ${currentPlan === p.id ? 'secondary' : ''}" data-plan-btn="${p.id}" style="width:100%" ${currentPlan === p.id ? 'disabled' : ''}>
+              ${currentPlan === p.id ? 'Current plan' : isActive ? (p.id === 'pro' ? 'Upgrade to Pro' : 'Switch to Standard') : (j.status === 'none' ? 'Start 7-day free trial' : 'Subscribe')}
+            </button>
           </div>
-          <button class="btn" id="billingActionBtn">${isActive ? 'Manage billing' : j.status === 'none' ? 'Start 7-day free trial' : 'Subscribe'}</button>
-        </div>
+        `).join('')}
       </div>
-      ${!isActive ? '<p class="empty" style="margin-top:14px">Analysis, Opportunities, and the AI Assistant require an active subscription. Positions, Market, News, and Clients stay free.</p>' : ''}
+      <div class="panel" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-size:13px;color:var(--dim)">
+          <span class="status-badge ${isActive ? 'approved' : j.status === 'past_due' ? 'rejected' : ''}" style="${!isActive && j.status !== 'past_due' ? 'background:var(--panel-3);color:var(--dim)' : ''}">${STATUS_LABELS[j.status] || j.status}</span>
+          ${j.currentPeriodEnd ? ` · renews ${new Date(j.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+        </div>
+        ${isActive ? '<button class="btn secondary" id="billingPortalBtn">Manage billing / cancel</button>' : ''}
+      </div>
+      ${!isActive ? '<p class="empty" style="margin-top:14px">Analysis, Opportunities, and the AI Assistant require an active subscription. Options and Day Trading additionally require Pro. Positions, Market, News, and Clients stay free.</p>' : ''}
     `;
-    document.getElementById('billingActionBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('billingActionBtn');
+
+    document.querySelectorAll('[data-plan-btn]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const plan = btn.dataset.planBtn;
+        setBtnLoading(btn, 'Loading…');
+        try {
+          if (isActive) {
+            const res = await fetch('/billing/change-plan', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan }),
+            });
+            const data = await res.json();
+            if (!res.ok) { toast(data.error || 'Could not change plan.', 'error'); resetBtn(btn); return; }
+            toast(`Switched to ${plan === 'pro' ? 'Pro' : 'Standard'}.`, 'success');
+            await loadBilling();
+            return;
+          }
+          const res = await fetch('/billing/checkout', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan }),
+          });
+          const data = await res.json();
+          if (!res.ok) { toast(data.error || 'Could not start billing.', 'error'); resetBtn(btn); return; }
+          location.href = data.url;
+        } catch (e) {
+          toast('Could not reach the server: ' + e.message, 'error');
+          resetBtn(btn);
+        }
+      });
+    });
+    document.getElementById('billingPortalBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('billingPortalBtn');
       setBtnLoading(btn, 'Loading…');
       try {
-        const res = await fetch(isActive ? '/billing/portal' : '/billing/checkout', { method: 'POST' });
+        const res = await fetch('/billing/portal', { method: 'POST' });
         const data = await res.json();
-        if (!res.ok) { toast(data.error || 'Could not start billing.', 'error'); resetBtn(btn); return; }
+        if (!res.ok) { toast(data.error || 'Could not open billing portal.', 'error'); resetBtn(btn); return; }
         location.href = data.url;
       } catch (e) {
         toast('Could not reach the server: ' + e.message, 'error');

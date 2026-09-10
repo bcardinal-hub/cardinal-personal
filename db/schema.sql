@@ -20,6 +20,12 @@ CREATE TABLE subscriptions (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
   stripe_customer_id TEXT NOT NULL,
   stripe_subscription_id TEXT,
+  -- Which Stripe Price the subscription is actually on — the source of
+  -- truth for plan tier (see PLAN_PRICE_IDS in lib/stripe.js). Not a
+  -- separate "plan" text column on purpose: deriving tier from the real
+  -- price id means it can never drift out of sync with what Stripe is
+  -- actually billing.
+  stripe_price_id TEXT,
   status TEXT NOT NULL DEFAULT 'none' CHECK (status IN ('none', 'trialing', 'active', 'past_due', 'canceled', 'incomplete')),
   current_period_end TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),

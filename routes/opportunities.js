@@ -3,7 +3,7 @@ import { scanHousehold, scanPersonalPortfolio } from "../lib/opportunityEngine.j
 import { scanForTradeIdeas } from "../lib/tradeIdeas.js";
 import { scanForOptionsIdeas } from "../lib/optionsIdeas.js";
 import { scanForDayTradingIdeas } from "../lib/dayTradingIdeas.js";
-import { requireSubscription } from "../lib/paywall.js";
+import { requireSubscription, requirePro } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
 
 const router = express.Router();
@@ -147,7 +147,7 @@ router.get("/personal", async (req, res) => {
 // risk than the general trade ideas (leverage, assignment, time decay,
 // and brokers gate options behind their own approval tier), so this never
 // runs silently bundled into the general scan.
-router.post("/scan/options", requireSubscription, optionsScanCooldown, async (req, res) => {
+router.post("/scan/options", requirePro, optionsScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
     const found = await scanForOptionsIdeas(holdings);
@@ -161,7 +161,7 @@ router.post("/scan/options", requireSubscription, optionsScanCooldown, async (re
 // Separate, explicitly-triggered scan — the highest-risk idea category this
 // app produces (see lib/dayTradingIdeas.js for the full reasoning). Never
 // bundled into the general scan; a person has to specifically ask for this.
-router.post("/scan/daytrading", requireSubscription, dayTradingScanCooldown, async (req, res) => {
+router.post("/scan/daytrading", requirePro, dayTradingScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
     const found = await scanForDayTradingIdeas(holdings);

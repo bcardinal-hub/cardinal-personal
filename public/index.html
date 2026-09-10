@@ -295,10 +295,12 @@
   footer a:hover { color: var(--dim); }
 
   /* ---- Pricing depth + FAQ ---- */
-  .info-section { width: 100%; max-width: 680px; margin-top: 56px; }
+  .info-section { width: 100%; max-width: 760px; margin-top: 56px; }
+  .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  @media (max-width: 640px) { .pricing-grid { grid-template-columns: 1fr; } }
   .pricing-card {
     background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
-    padding: 32px 34px; margin-bottom: 40px;
+    padding: 32px 34px;
     box-shadow: 0 20px 48px -28px rgba(90,70,30,0.22);
   }
   .pricing-card .p-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
@@ -354,7 +356,7 @@
       <div class="team-chip"><span class="avatar">MS</span> Market</div>
     </div>
   </div>
-  <p class="pricing-note reveal" style="animation-delay:380ms">$29/month · 7-day free trial · cancel anytime</p>
+  <p class="pricing-note reveal" style="animation-delay:380ms">From $29/month · 7-day free trial · cancel anytime</p>
 </div>
 
 <div class="shell reveal" style="animation-delay:340ms">
@@ -375,20 +377,33 @@
 </div>
 
 <div class="info-section">
-  <div class="pricing-card">
-    <div class="p-top">
-      <h2>Cardinal Personal</h2>
-      <div class="p-amount">$29<span>/month</span></div>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="p-top">
+        <h2>Standard</h2>
+        <div class="p-amount">$29<span>/month</span></div>
+      </div>
+      <div class="p-sub">7-day free trial · cancel anytime</div>
+      <ul class="pricing-list" style="grid-template-columns:1fr">
+        <li>Connect unlimited accounts via Plaid or Schwab</li>
+        <li>7-role AI research desk on your real holdings</li>
+        <li>Deterministic tax-loss &amp; risk checks</li>
+        <li>General Trade Ideas Desk research</li>
+        <li>Live market data, news, and Terminal view</li>
+        <li>Learn to Invest — free forever, no account needed</li>
+      </ul>
     </div>
-    <div class="p-sub">7-day free trial · cancel anytime · no long-term contract</div>
-    <ul class="pricing-list">
-      <li>Connect unlimited accounts via Plaid or Schwab</li>
-      <li>10-role AI research desk on your real holdings</li>
-      <li>Deterministic tax-loss &amp; risk checks, always free of AI guesswork</li>
-      <li>AI trade ideas &amp; options strategy research</li>
-      <li>Live market data, news, and Terminal view</li>
-      <li>Learn to Invest guide &amp; glossary — free forever, no account needed</li>
-    </ul>
+    <div class="pricing-card" style="border-color:var(--accent-2);box-shadow:0 20px 48px -28px rgba(90,70,30,0.35), 0 0 0 2px var(--accent-glow)">
+      <div class="p-top">
+        <h2>Pro</h2>
+        <div class="p-amount">$40<span>/month</span></div>
+      </div>
+      <div class="p-sub">Everything in Standard, plus:</div>
+      <ul class="pricing-list" style="grid-template-columns:1fr">
+        <li>Options Strategist — strategy-level ideas</li>
+        <li>Day Trading Desk — highest-risk, opt-in short-term setups</li>
+      </ul>
+    </div>
   </div>
 
   <h3 class="section-h">Questions people actually ask</h3>
@@ -694,6 +709,10 @@ const FAQ = [
   {
     q: "I've never invested before — is this too advanced for me?",
     a: "It's built for exactly this. The free Learn to Invest guide (no account needed) covers the basics in plain language, and the AI Assistant is instructed to explain any term you don't recognize rather than assume you know it. If you understand what a savings account is, you have enough to start."
+  },
+  {
+    q: "What's the difference between Standard and Pro?",
+    a: "Pro ($40/mo) adds two specifically higher-risk, opt-in idea categories: strategy-level options research and a Day Trading Desk for short-term setups. Everything else — the core 7-role research desk, Trade Ideas, Terminal, market data — is the same on both plans. Most people are well served by Standard; Pro is for people who specifically want those two riskier categories. You can switch between plans anytime from Billing."
   },
   {
     q: "What accounts can I connect?",
