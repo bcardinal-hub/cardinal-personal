@@ -1,6 +1,6 @@
 import express from "express";
 import { runMarketSnapshot } from "../lib/claude.js";
-import { INDEX_PROXIES, WATCHLIST, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
+import { INDEX_PROXIES, WATCHLIST, SECTOR_PROXIES, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
 import { requireSubscription } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
 
@@ -51,6 +51,23 @@ router.get("/quotes", async (req, res) => {
       holdings: yours,
       asOf: new Date().toISOString(),
     });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Sector breadth — real data, sorted best-to-worst, no caching (same "make
+// it actually live" rule as /quotes). Registered ahead of the /:kind
+// catch-all below so it isn't swallowed by that dynamic route.
+router.get("/sectors", async (req, res) => {
+  if (!process.env.FINNHUB_API_KEY) return res.status(400).json({ error: "Market data isn't configured yet (FINNHUB_API_KEY missing)." });
+  try {
+    const quotes = await getQuotes(SECTOR_PROXIES.map((s) => s.symbol));
+    const labelBySymbol = Object.fromEntries(SECTOR_PROXIES.map((s) => [s.symbol, s.label]));
+    const sectors = quotes
+      .map((q) => ({ ...q, label: labelBySymbol[q.symbol] }))
+      .sort((a, b) => b.changePct - a.changePct);
+    res.json({ sectors, asOf: new Date().toISOString() });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -170,6 +170,17 @@
   }
   .holdings-quote-chip .qc-ticker { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 
+  /* ---- Sector performance ---- */
+  .sector-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+  .sector-row + .sector-row { border-top: 1px solid var(--border-soft); }
+  .sector-label { width: 165px; flex-shrink: 0; font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .sector-bar-track { flex: 1; height: 8px; background: var(--panel-2); border-radius: 4px; position: relative; overflow: hidden; }
+  .sector-bar-fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+  .sector-bar-fill.up { background: var(--green); left: 50%; }
+  .sector-bar-fill.down { background: var(--danger); right: 50%; }
+  .sector-pct { width: 62px; text-align: right; flex-shrink: 0; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) { .sector-label { width: 110px; font-size: 11.5px; } }
+
   /* ---- News feed ---- */
   .news-card { display: flex; gap: 14px; padding: 16px 0; border-top: 1px solid var(--border-soft); }
   .news-card:first-child { border-top: none; }
@@ -684,6 +695,14 @@
     <div id="holdingQuotes"></div>
 
     <div class="panel" style="margin-top:8px">
+      <div class="detail-section-head">
+        <h3 style="font-size:14px">Sector Performance</h3>
+        <span style="font-size:11px;color:var(--dim-2)">Today, best to worst</span>
+      </div>
+      <div id="sectorGrid"><div class="skeleton skeleton-row"></div></div>
+    </div>
+
+    <div class="panel" style="margin-top:8px">
       <div class="detail-section-head" style="margin-bottom:0">
         <h3 style="font-size:14px">AI Market Take</h3>
         <button class="btn secondary" id="marketRefreshBtn" style="padding:8px 14px;font-size:12px">Refresh</button>
@@ -871,7 +890,8 @@ function activateTab(tab) {
   if (quotePollTimer) { clearInterval(quotePollTimer); quotePollTimer = null; }
   if (tab === 'market') {
     loadQuotes(false);
-    quotePollTimer = setInterval(() => loadQuotes(false), 45000);
+    loadSectors();
+    quotePollTimer = setInterval(() => { loadQuotes(false); loadSectors(); }, 45000);
   }
   // Terminal polls faster — it's meant to feel live — and only while open.
   if (termPollTimer) { clearInterval(termPollTimer); termPollTimer = null; }
@@ -1176,6 +1196,33 @@ function quoteChangeHtml(q) {
   return `<div class="q-change ${cls}">${sign}${q.change.toFixed(2)} (${sign}${q.changePct.toFixed(2)}%)</div>`;
 }
 
+// Real sector breadth (11 GICS sector ETFs), sorted best to worst — what
+// actually explains a tech-heavy portfolio moving differently than the
+// S&P headline, which raw index quotes alone don't show.
+async function loadSectors() {
+  const grid = document.getElementById('sectorGrid');
+  try {
+    const r = await fetch('/market/sectors');
+    const j = await r.json();
+    if (!r.ok) { grid.innerHTML = `<p class="empty">${j.error || 'Sector data unavailable.'}</p>`; return; }
+    if (!j.sectors.length) { grid.innerHTML = '<p class="empty">No sector data right now.</p>'; return; }
+    const maxAbs = Math.max(...j.sectors.map(s => Math.abs(s.changePct)), 1);
+    grid.innerHTML = j.sectors.map(s => {
+      const cls = s.changePct >= 0 ? 'up' : 'down';
+      const widthPct = Math.min(100, (Math.abs(s.changePct) / maxAbs) * 50);
+      return `
+        <div class="sector-row">
+          <div class="sector-label">${s.label}</div>
+          <div class="sector-bar-track"><div class="sector-bar-fill ${cls}" style="width:${widthPct}%"></div></div>
+          <div class="sector-pct ${cls}">${s.changePct >= 0 ? '+' : ''}${s.changePct.toFixed(2)}%</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+
 async function loadQuotes(showSpinnerToast) {
   try {
     const r = await fetch('/market/quotes');
@@ -1215,7 +1262,7 @@ async function loadQuotes(showSpinnerToast) {
 document.getElementById('marketRefreshQuotesBtn').addEventListener('click', () => {
   const btn = document.getElementById('marketRefreshQuotesBtn');
   setBtnLoading(btn, 'Refreshing…');
-  loadQuotes(true).finally(() => resetBtn(btn));
+  Promise.all([loadQuotes(true), loadSectors()]).finally(() => resetBtn(btn));
 });
 
 // ---- Real news feed (real articles, no LLM paraphrasing) ----
