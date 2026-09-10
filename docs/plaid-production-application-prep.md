@@ -4,15 +4,15 @@ Plaid's Production application is submitted through your own Plaid dashboard (da
 
 ## Before you submit: one hard blocker
 
-Plaid's application requires a **live, working Privacy Policy URL**. Cardinal Personal doesn't have one published yet — this is the same gap flagged in the [compliance research memo](./compliance-research-memo.md). **A Privacy Policy needs to exist at a real URL (e.g., `cardinal-personal.onrender.com/privacy.html`) before you submit this application**, or Plaid will reject it outright. Ideally this comes out of the same attorney engagement as the ToS — ask me to draft a starting version if you want something in place sooner, but flag it as attorney-reviewed-pending, same as the ToS.
+Plaid's application requires a **live, working Privacy Policy URL**. Cardinal Finance AI doesn't have one published yet — this is the same gap flagged in the [compliance research memo](./compliance-research-memo.md). **A Privacy Policy needs to exist at a real URL (e.g., `cardinal-personal.onrender.com/privacy.html`) before you submit this application**, or Plaid will reject it outright. Ideally this comes out of the same attorney engagement as the ToS — ask me to draft a starting version if you want something in place sooner, but flag it as attorney-reviewed-pending, same as the ToS.
 
 ## Application field content (copy-paste ready)
 
-**App name:** Cardinal Personal
+**App name:** Cardinal Finance AI
 
 **App description / use case** (Plaid usually asks something like "describe what your app does and how you use Plaid data"):
 
-> Cardinal Personal is a subscription financial research tool for individual consumers managing their own investments. Users connect their own bank or brokerage accounts via Plaid to sync their real investment holdings (via the Investments product). The app never initiates a transaction, transfer, or trade of any kind — it is strictly read-only. Once synced, an AI-assisted research layer analyzes the user's own holdings (fundamentals, risk, tax framing, diversification) and presents findings for the user to review; every actual investment decision is made and executed by the user themselves, in their own brokerage. Cardinal Personal never has write access, never stores Plaid login credentials (Plaid returns only a token, never the user's actual bank credentials), and access tokens are encrypted at rest (AES-256-GCM) in our database.
+> Cardinal Finance AI is a subscription financial research tool for individual consumers managing their own investments. Users connect their own bank or brokerage accounts via Plaid to sync their real investment holdings (via the Investments product). The app never initiates a transaction, transfer, or trade of any kind — it is strictly read-only. Once synced, an AI-assisted research layer analyzes the user's own holdings (fundamentals, risk, tax framing, diversification) and presents findings for the user to review; every actual investment decision is made and executed by the user themselves, in their own brokerage. Cardinal Finance AI never has write access, never stores Plaid login credentials (Plaid returns only a token, never the user's actual bank credentials), and access tokens are encrypted at rest (AES-256-GCM) in our database.
 
 **Plaid products used:** Investments (holdings/positions data). Not requesting Auth, Transactions, Liabilities, or Payments/transfer products — this app has no need for them given its read-only, holdings-analysis-only scope.
 
@@ -20,7 +20,7 @@ Plaid's application requires a **live, working Privacy Policy URL**. Cardinal Pe
 
 **How users connect (end user flow description):**
 
-> A user signs up for a Cardinal Personal account (separate from their bank credentials), then clicks "Connect bank or brokerage," which launches Plaid Link. They select their institution and authenticate directly with Plaid/their institution — Cardinal Personal never sees or stores their actual login credentials, only the resulting access token. After a successful connection, the user's investment holdings sync into their private dashboard for analysis.
+> A user signs up for a Cardinal Finance AI account (separate from their bank credentials), then clicks "Connect bank or brokerage," which launches Plaid Link. They select their institution and authenticate directly with Plaid/their institution — Cardinal Finance AI never sees or stores their actual login credentials, only the resulting access token. After a successful connection, the user's investment holdings sync into their private dashboard for analysis.
 
 **Data retention / deletion practices** (Plaid will ask how long you keep data and how a user can have it deleted):
 

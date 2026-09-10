@@ -1,4 +1,4 @@
-# Cardinal Personal — the research desk for people who manage their own money
+# Cardinal Finance AI — the research desk for people who manage their own money
 
 A subscription ($29/mo, 7-day free trial) self-directed financial copilot: connect
 your real accounts (any bank/brokerage via Plaid, or Schwab directly), and a

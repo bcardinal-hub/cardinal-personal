@@ -1,8 +1,8 @@
-# Cardinal Personal — Regulatory Research Memo (Draft, Pre-Counsel)
+# Cardinal Finance AI — Regulatory Research Memo (Draft, Pre-Counsel)
 
-**This is not legal advice.** This document was prepared by an AI assistant (Claude) to help the founder prepare for a real conversation with a securities attorney — it summarizes the legal tests that are publicly known to apply to products like this, and flags where Cardinal Personal's actual design sits relative to them. Nothing here should be treated as a clearance to charge real money, and nothing here substitutes for review by a licensed attorney in the relevant jurisdiction(s). Treat this as a briefing document, not a legal opinion.
+**This is not legal advice.** This document was prepared by an AI assistant (Claude) to help the founder prepare for a real conversation with a securities attorney — it summarizes the legal tests that are publicly known to apply to products like this, and flags where Cardinal Finance AI's actual design sits relative to them. Nothing here should be treated as a clearance to charge real money, and nothing here substitutes for review by a licensed attorney in the relevant jurisdiction(s). Treat this as a briefing document, not a legal opinion.
 
-**Bottom line up front:** before Cardinal Personal takes its first real (non-test-mode) dollar from a stranger, retain a securities attorney with fintech/RIA experience for a real review. This memo exists to make that conversation faster and cheaper, not to replace it.
+**Bottom line up front:** before Cardinal Finance AI takes its first real (non-test-mode) dollar from a stranger, retain a securities attorney with fintech/RIA experience for a real review. This memo exists to make that conversation faster and cheaper, not to replace it.
 
 ---
 
@@ -14,9 +14,9 @@ The U.S. federal standard (Investment Advisers Act of 1940, and the three-part t
 2. **Is in the business of doing so** (a regular part of their occupation, not a one-off)
 3. **Receives compensation for it**
 
-Mapped onto Cardinal Personal as it actually works today:
+Mapped onto Cardinal Finance AI as it actually works today:
 
-| Test | Cardinal Personal | Signal |
+| Test | Cardinal Finance AI | Signal |
 |---|---|---|
 | Advice/analysis about securities | Yes — the entire product is AI + deterministic analysis of specific real holdings (tickers, quantities, cost basis) | **Strong yes** |
 | In the business of it | Yes, if this becomes an ongoing paid product rather than a one-off tool | **Strong yes**, once monetized |
@@ -28,11 +28,11 @@ All three prongs point toward "yes, this looks like investment advice" under the
 
 There's a real, long-standing exemption for **bona fide publications of general and regular circulation** — think a financial newsletter or website giving general commentary that isn't tailored to any one subscriber's actual portfolio (the leading case is *Lowe v. SEC*, 472 U.S. 181 (1985)).
 
-**This is the exemption people reach for first, and it's the one that's weakest for Cardinal Personal specifically.** The publisher's exemption depends on the advice being:
+**This is the exemption people reach for first, and it's the one that's weakest for Cardinal Finance AI specifically.** The publisher's exemption depends on the advice being:
 - **Impersonal** (not tailored to one person's specific financial situation)
 - **General** (not analyzing one subscriber's actual real holdings)
 
-Cardinal Personal's entire value proposition — the thing that makes it worth $29/month instead of free market commentary — is the *opposite* of impersonal: it connects real accounts, reads real positions, real cost basis, and generates analysis specific to that one person's actual portfolio. That's a meaningful factor cutting *against* the publisher's exemption applying cleanly, not for it. An attorney needs to weigh in on this specifically before anyone relies on it.
+Cardinal Finance AI's entire value proposition — the thing that makes it worth $29/month instead of free market commentary — is the *opposite* of impersonal: it connects real accounts, reads real positions, real cost basis, and generates analysis specific to that one person's actual portfolio. That's a meaningful factor cutting *against* the publisher's exemption applying cleanly, not for it. An attorney needs to weigh in on this specifically before anyone relies on it.
 
 ## 3. Design choices that are already good mitigations (keep and strengthen these)
 
@@ -52,7 +52,7 @@ What's **missing** and should be treated as launch-blockers, not nice-to-haves:
 ## 4. Registration: federal vs. state, and why this is genuinely jurisdiction-specific
 
 - Advisers with **$100M+ in regulatory assets under management (AUM)** generally register with the SEC federally.
-- Cardinal Personal doesn't manage assets at all (no discretion, no custody, no trading) — so the AUM-based federal threshold likely doesn't apply the way it would to a traditional adviser. But "furnishing advice for compensation without managing assets" is exactly the kind of adviser most states still regulate at the **state level**, and every state's rules differ.
+- Cardinal Finance AI doesn't manage assets at all (no discretion, no custody, no trading) — so the AUM-based federal threshold likely doesn't apply the way it would to a traditional adviser. But "furnishing advice for compensation without managing assets" is exactly the kind of adviser most states still regulate at the **state level**, and every state's rules differ.
 - Many states have a **de minimis exemption** (commonly: advisers with a small number of clients in that state — often cited around 5 or fewer in a trailing 12 months — with no physical place of business there). NASAA (the state regulators' association) publishes model rules many states follow, but not all states adopt them identically.
 - **This is the single most jurisdiction-dependent part of the whole question**, and exactly the kind of thing that needs a real attorney who tracks state-by-state variation — not something to guess at or extrapolate from one state's rule.
 

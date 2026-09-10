@@ -177,10 +177,10 @@ const port = process.env.PORT || 3000;
 if (useHttps) {
   const options = { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) };
   https.createServer(options, app).listen(port, () =>
-    console.log(`Cardinal Personal running on https://127.0.0.1:${port} (self-signed cert — click through the browser warning once)`)
+    console.log(`Cardinal Finance AI running on https://127.0.0.1:${port} (self-signed cert — click through the browser warning once)`)
   );
 } else {
   app.listen(port, () =>
-    console.log(`Cardinal Personal running on http://localhost:${port} (no certs/ found — Schwab OAuth needs HTTPS, see README)`)
+    console.log(`Cardinal Finance AI running on http://localhost:${port} (no certs/ found — Schwab OAuth needs HTTPS, see README)`)
   );
 }
