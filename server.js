@@ -58,6 +58,41 @@ app.post("/billing/webhook", express.raw({ type: "application/json" }), (req, re
   next();
 }, webhookHandler);
 
+// Baseline security headers — hand-rolled rather than pulling in helmet
+// for a handful of headers. CSP is deliberately not maximally strict:
+// script-src/style-src need 'unsafe-inline' because the current UI relies
+// on inline onclick="" handlers and inline <script>/<style> blocks
+// throughout public/*.html, so this doesn't block inline-script XSS the
+// way a nonce-based CSP would — a real gap, noted rather than glossed
+// over. What it does meaningfully do: blocks this app from ever being
+// framed by another site (clickjacking), blocks loading executable
+// content from any origin outside what's actually used (Plaid, Google
+// Fonts), and adds the standard MIME/referrer hardening.
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.plaid.com https://*.plaid.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https://*.plaid.com",
+      "frame-src https://cdn.plaid.com https://*.plaid.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join("; ")
+  );
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=()");
+  if (isProduction) res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+  next();
+});
+
 app.use(express.json());
 app.use(
   session({

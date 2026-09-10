@@ -3,8 +3,16 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cancelSubscriptionImmediately } from "../lib/stripe.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
+import { rateLimit } from "../lib/rateLimit.js";
 
 const router = express.Router();
+
+// Brute-force/spam protection, per IP. Login is the tightest (credential
+// guessing is the real risk); signup and forgot-password are looser but
+// still capped (mass account creation, email-bombing an address).
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, label: "login" });
+const signupLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 8, label: "signup" });
+const forgotPasswordLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, label: "password reset" });
 
 // Hash the raw token the same way on both ends (request + reset) — never
 // store or compare the raw value server-side, same principle as a password.
@@ -19,7 +27,7 @@ function normalizeEmail(raw) {
   return typeof raw === "string" ? raw.trim().toLowerCase() : raw;
 }
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", signupLimiter, async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const { password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Email and password required." });
@@ -38,7 +46,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const { password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Email and password required." });
@@ -60,7 +68,7 @@ router.post("/login", async (req, res) => {
 // anti-enumeration principle as the timing-safe check in /login. An
 // attacker probing emails shouldn't be able to tell which ones have
 // accounts just by whether a reset was sent.
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   const email = normalizeEmail(req.body.email);
   if (!email) return res.status(400).json({ error: "Email required." });
 
