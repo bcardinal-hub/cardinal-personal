@@ -1,8 +1,16 @@
 import express from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { cancelSubscriptionImmediately } from "../lib/stripe.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
 
 const router = express.Router();
+
+// Hash the raw token the same way on both ends (request + reset) — never
+// store or compare the raw value server-side, same principle as a password.
+function hashToken(raw) {
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
 
 const SALT_ROUNDS = 12;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,6 +52,62 @@ router.post("/login", async (req, res) => {
   if (!user || !valid) {
     return res.status(401).json({ error: "Invalid email or password." });
   }
+  req.session.userId = user.id;
+  res.json({ ok: true });
+});
+
+// Always responds {ok:true} regardless of whether the email exists — same
+// anti-enumeration principle as the timing-safe check in /login. An
+// attacker probing emails shouldn't be able to tell which ones have
+// accounts just by whether a reset was sent.
+router.post("/forgot-password", async (req, res) => {
+  const email = normalizeEmail(req.body.email);
+  if (!email) return res.status(400).json({ error: "Email required." });
+
+  const { rows } = await req.db.query("SELECT id FROM users WHERE email = $1", [email]);
+  const user = rows[0];
+  if (user) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await req.db.query(
+      "UPDATE users SET reset_token_hash = $1, reset_token_expires = $2 WHERE id = $3",
+      [hashToken(rawToken), expires, user.id]
+    );
+    const origin = `${req.protocol}://${req.get("host")}`;
+    const resetUrl = `${origin}/?reset=${rawToken}`;
+    try {
+      await sendPasswordResetEmail(email, resetUrl);
+    } catch (e) {
+      // Don't leak email-delivery failures to the client — that would both
+      // reveal whether the address exists and expose config errors. Log
+      // server-side only.
+      console.error("Password reset email failed:", e.message);
+    }
+  }
+  res.json({ ok: true });
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: "Token and new password required." });
+  if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters." });
+
+  const { rows } = await req.db.query(
+    "SELECT id, reset_token_expires FROM users WHERE reset_token_hash = $1",
+    [hashToken(token)]
+  );
+  const user = rows[0];
+  if (!user || !user.reset_token_expires || new Date(user.reset_token_expires) < new Date()) {
+    return res.status(400).json({ error: "That reset link is invalid or has expired — request a new one." });
+  }
+
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  await req.db.query(
+    "UPDATE users SET password_hash = $1, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = $2",
+    [passwordHash, user.id]
+  );
+  // Log them straight in — they just proved account ownership via the
+  // emailed link, no reason to make them type the new password twice.
   req.session.userId = user.id;
   res.json({ ok: true });
 });

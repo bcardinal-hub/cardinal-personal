@@ -4,6 +4,11 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  -- Password reset. Store a HASH of the token (like a password), never the
+  -- raw token — the raw value only ever exists in the emailed link itself.
+  -- A stolen DB backup shouldn't be enough to take over accounts via reset.
+  reset_token_hash TEXT,
+  reset_token_expires TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

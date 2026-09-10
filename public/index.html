@@ -442,6 +442,32 @@ function renderStage(errorMsg) {
       <input id="password" type="password" placeholder="password" autocomplete="current-password" />
       <button class="btn" id="loginBtn" onclick="doAuth('/auth/login')">Log in</button>
       <button class="btn secondary" id="signupBtn" onclick="doAuth('/auth/signup')">Create account</button>
+      <div class="link-row"><span class="link" onclick="current='forgot'; renderStage();">Forgot password?</span></div>
+    `;
+    return;
+  }
+
+  if (current === 'forgot') {
+    stage.innerHTML = `
+      <p class="eyebrow">Password reset</p>
+      <h2>Reset your password</h2>
+      <p class="desc">Enter the email on your account and we'll send a reset link — if that email has an account, you'll get it within a minute or two.</p>
+      ${banner(errorMsg)}
+      <input id="forgotEmail" placeholder="email" autocomplete="username" value="${creds.email}" />
+      <button class="btn" id="forgotBtn" onclick="doForgotPassword()">Send reset link</button>
+      <div class="link-row"><span class="link" onclick="current='auth'; renderStage();">Back to sign in</span></div>
+    `;
+    return;
+  }
+
+  if (current === 'reset') {
+    stage.innerHTML = `
+      <p class="eyebrow">Password reset</p>
+      <h2>Choose a new password</h2>
+      <p class="desc">This link is single-use and expires an hour after it was requested.</p>
+      ${banner(errorMsg)}
+      <input id="newPassword" type="password" placeholder="new password (min 8 characters)" autocomplete="new-password" />
+      <button class="btn" id="resetBtn" onclick="doResetPassword()">Set new password</button>
     `;
     return;
   }
@@ -546,6 +572,51 @@ async function doAuth(path) {
   busy = false;
 }
 
+let resetToken = null;
+
+async function doForgotPassword() {
+  if (busy) return;
+  busy = true;
+  const email = document.getElementById('forgotEmail').value.trim();
+  setButtonLoading('forgotBtn', 'Sending…');
+  try {
+    const r = await fetch('/auth/forgot-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+    });
+    const j = await r.json();
+    if (!r.ok) { renderStage(j.error || 'Something went wrong.'); busy = false; return; }
+    creds.email = email;
+    document.getElementById('stage').innerHTML = `
+      <p class="eyebrow">Password reset</p>
+      <h2>Check your email</h2>
+      <p class="desc">If ${email} has an account, a reset link is on its way — it expires in an hour. Didn't get it after a few minutes? Check spam, or try again.</p>
+      <div class="link-row"><span class="link" onclick="current='auth'; renderStage();">Back to sign in</span></div>
+    `;
+  } catch (e) {
+    renderStage('Could not reach the server: ' + e.message);
+  }
+  busy = false;
+}
+
+async function doResetPassword() {
+  if (busy) return;
+  busy = true;
+  const password = document.getElementById('newPassword').value;
+  setButtonLoading('resetBtn', 'Saving…');
+  try {
+    const r = await fetch('/auth/reset-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, password }),
+    });
+    const j = await r.json();
+    if (!r.ok) { busy = false; renderStage(j.error || 'Something went wrong.'); return; }
+    resetToken = null;
+    await refreshState();
+  } catch (e) {
+    renderStage('Could not reach the server: ' + e.message);
+  }
+  busy = false;
+}
+
 async function doSync() {
   if (busy) return;
   busy = true;
@@ -598,6 +669,19 @@ if (new URLSearchParams(location.search).has('step')) {
   history.replaceState({}, '', location.pathname);
 }
 
+// A password-reset email link lands here as ?reset=<token> — this takes
+// over the flow regardless of current login state (the whole point is
+// getting back in without needing to already be logged in) and skips the
+// normal server-state-driven refreshState() below.
+const resetParam = new URLSearchParams(location.search).get('reset');
+if (resetParam) {
+  resetToken = resetParam;
+  current = 'reset';
+  history.replaceState({}, '', location.pathname);
+  renderStepper();
+  renderStage();
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
@@ -647,7 +731,10 @@ document.getElementById('faqList').addEventListener('click', (e) => {
 });
 renderFAQ();
 
-refreshState();
+// Skip the normal server-state redirect while a password reset is in
+// progress — refreshState() would otherwise bounce a logged-out visitor
+// straight back to the sign-in stage before they ever see the reset form.
+if (current !== 'reset') refreshState();
 </script>
 </body>
 </html>
