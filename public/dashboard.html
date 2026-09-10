@@ -734,6 +734,24 @@
       <div><h1>Billing</h1><div class="subtitle">Manage your Cardinal Personal subscription.</div></div>
     </div>
     <div id="billingRoot"><div class="skeleton skeleton-stat"></div></div>
+
+    <div class="panel" style="margin-top:24px;border-color:rgba(173,61,61,0.25)">
+      <div class="detail-section-head">
+        <h3 style="color:var(--danger)">Danger Zone</h3>
+      </div>
+      <p class="opp-next-step" style="margin-top:0;border-left-color:var(--danger);background:var(--danger-glow)">Deleting your account permanently removes your login, every connected account, synced holdings, chat history, and recommendation history — and cancels any active subscription immediately. This can't be undone.</p>
+      <div id="deleteAccountForm" style="display:none">
+        <div class="field-row inline">
+          <div class="field" style="max-width:280px">
+            <label>Confirm your password</label>
+            <input type="password" id="deleteAccountPassword" autocomplete="current-password" />
+          </div>
+          <button class="btn" id="deleteAccountConfirmBtn" style="background:var(--danger);box-shadow:none">Permanently delete my account</button>
+          <button class="btn secondary" id="deleteAccountCancelBtn">Cancel</button>
+        </div>
+      </div>
+      <button class="btn secondary" id="deleteAccountToggleBtn" style="border-color:rgba(173,61,61,0.35);color:var(--danger)">Delete my account</button>
+    </div>
   </section>
 </main>
 
@@ -832,6 +850,36 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(el => el.addEventListen
 document.getElementById('signOutBtn').addEventListener('click', async () => {
   await fetch('/auth/logout', { method: 'POST' });
   location.href = '/';
+});
+
+// ---- Delete account ----
+document.getElementById('deleteAccountToggleBtn').addEventListener('click', () => {
+  document.getElementById('deleteAccountForm').style.display = '';
+  document.getElementById('deleteAccountToggleBtn').style.display = 'none';
+  document.getElementById('deleteAccountPassword').focus();
+});
+document.getElementById('deleteAccountCancelBtn').addEventListener('click', () => {
+  document.getElementById('deleteAccountForm').style.display = 'none';
+  document.getElementById('deleteAccountToggleBtn').style.display = '';
+  document.getElementById('deleteAccountPassword').value = '';
+});
+document.getElementById('deleteAccountConfirmBtn').addEventListener('click', async () => {
+  const password = document.getElementById('deleteAccountPassword').value;
+  if (!password) { toast('Enter your password to confirm.', 'error'); return; }
+  if (!confirm('This permanently deletes your account and everything in it. This cannot be undone. Continue?')) return;
+  const btn = document.getElementById('deleteAccountConfirmBtn');
+  setBtnLoading(btn, 'Deleting…');
+  try {
+    const r = await fetch('/auth/delete-account', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }),
+    });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Could not delete account.', 'error'); resetBtn(btn); return; }
+    location.href = '/';
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+    resetBtn(btn);
+  }
 });
 
 // ---- Mobile sidebar drawer ----

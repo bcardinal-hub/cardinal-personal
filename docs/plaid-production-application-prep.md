@@ -24,7 +24,7 @@ Plaid's application requires a **live, working Privacy Policy URL**. Cardinal Pe
 
 **Data retention / deletion practices** (Plaid will ask how long you keep data and how a user can have it deleted):
 
-> Synced holdings data is retained only as long as the user's account remains connected. If a user disconnects their account or requests deletion, [describe your actual current behavior here — check whether `routes/plaid.js`/`households.js` currently supports a full account-deletion flow; if it doesn't yet, that's worth building before this goes to real users regardless of the Plaid application, since "how do I delete my data" is a real, common request].
+> Synced holdings data is retained only as long as the user's account remains connected. Users can self-serve permanently delete their entire account at any time from within the app (Billing → Danger Zone), which immediately removes all Plaid/Schwab access tokens, synced holdings, and related data from our database — no support request required.
 
 **Security practices summary** (Plaid's security questionnaire will ask about this in more depth, but for the initial application description):
 
