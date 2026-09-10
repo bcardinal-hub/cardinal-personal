@@ -61,12 +61,13 @@ async function insertOpportunities(db, userId, householdId, found, source = "det
         opp.specialist_review_required,
       ]
     );
-    inserted.push(rows[0]);
     // Track-record capture — best-effort, never blocks the scan response
-    // itself. See lib/trackRecord.js.
+    // itself. See lib/trackRecord.js. Reflected into the row we're about
+    // to return so the client sees it immediately, not just on next load.
     if (source === "ai" && opp.supporting_data?.ticker) {
-      await recordCalloutPrice(db, rows[0].id, opp.supporting_data.ticker);
+      rows[0].price_at_callout = await recordCalloutPrice(db, rows[0].id, opp.supporting_data.ticker);
     }
+    inserted.push(rows[0]);
   }
   return inserted;
 }
