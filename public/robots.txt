@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /learn.html
+Disallow: /dashboard.html
+Disallow: /billing/
+Disallow: /analysis/
+Disallow: /opportunities/
+Disallow: /households/
+
+Sitemap: https://cardinal-personal.onrender.com/sitemap.xml

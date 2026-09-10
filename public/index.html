@@ -3,11 +3,36 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Cardinal Personal</title>
+<title>Cardinal Personal — AI Financial Copilot for Your Own Money</title>
+<meta name="description" content="Connect your real accounts and get a 10-role AI research desk analyzing your actual holdings — fundamentals, risk, tax, trade ideas, and more. Never places a trade. $29/month, 7-day free trial." />
+<link rel="canonical" href="https://cardinal-personal.onrender.com/" />
+<meta property="og:title" content="Cardinal Personal — The Financial Copilot for Your Money" />
+<meta property="og:description" content="A full AI research desk analyzing your real holdings — read-only, human-approved, never places a trade. Free 7-day trial." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cardinal-personal.onrender.com/" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Cardinal Personal — The Financial Copilot for Your Money" />
+<meta name="twitter:description" content="A full AI research desk analyzing your real holdings — read-only, human-approved, never places a trade." />
 <link rel="manifest" href="/manifest.json" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
 <meta name="theme-color" content="#f8f5ee" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Cardinal Personal",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "description": "AI-powered personal financial research and advisory copilot. Connect your real accounts and a 10-role research desk analyzes your actual holdings. Never places a trade.",
+  "offers": {
+    "@type": "Offer",
+    "price": "29.00",
+    "priceCurrency": "USD",
+    "priceValidUntil": "2027-12-31"
+  }
+}
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
 
@@ -266,6 +291,35 @@
   }
 
   footer { text-align: center; color: var(--dim-2); font-size: 11.5px; margin-top: 36px; max-width: 460px; }
+
+  /* ---- Pricing depth + FAQ ---- */
+  .info-section { width: 100%; max-width: 680px; margin-top: 56px; }
+  .pricing-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+    padding: 32px 34px; margin-bottom: 40px;
+    box-shadow: 0 20px 48px -28px rgba(90,70,30,0.22);
+  }
+  .pricing-card .p-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .pricing-card h2 { font-size: 19px; margin: 0; }
+  .pricing-card .p-amount { font-size: 26px; font-weight: 700; color: var(--text); }
+  .pricing-card .p-amount span { font-size: 13px; font-weight: 600; color: var(--dim-2); }
+  .pricing-card .p-sub { font-size: 12.5px; color: var(--dim-2); margin-bottom: 20px; }
+  .pricing-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+  @media (max-width: 560px) { .pricing-list { grid-template-columns: 1fr; } }
+  .pricing-list li { font-size: 13px; color: var(--dim); display: flex; gap: 8px; align-items: flex-start; line-height: 1.5; }
+  .pricing-list li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+
+  .info-section h3.section-h { font-size: 21px; text-align: center; margin: 0 0 22px; }
+  .faq-item { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .faq-q {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 20px; cursor: pointer; user-select: none; font-size: 13.5px; font-weight: 650;
+  }
+  .faq-q:hover { background: var(--panel-2); }
+  .faq-chevron { color: var(--dim-2); font-size: 11px; transition: transform .2s ease; flex-shrink: 0; }
+  .faq-item.open .faq-chevron { transform: rotate(180deg); }
+  .faq-a { display: none; padding: 0 20px 18px; font-size: 13px; color: var(--dim); line-height: 1.7; }
+  .faq-item.open .faq-a { display: block; }
 </style>
 <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
@@ -316,6 +370,27 @@
     <summary>Developer output</summary>
     <pre id="out">—</pre>
   </details>
+</div>
+
+<div class="info-section">
+  <div class="pricing-card">
+    <div class="p-top">
+      <h2>Cardinal Personal</h2>
+      <div class="p-amount">$29<span>/month</span></div>
+    </div>
+    <div class="p-sub">7-day free trial · cancel anytime · no long-term contract</div>
+    <ul class="pricing-list">
+      <li>Connect unlimited accounts via Plaid or Schwab</li>
+      <li>10-role AI research desk on your real holdings</li>
+      <li>Deterministic tax-loss &amp; risk checks, always free of AI guesswork</li>
+      <li>AI trade ideas &amp; options strategy research</li>
+      <li>Live market data, news, and Terminal view</li>
+      <li>Learn to Invest guide &amp; glossary — free forever, no account needed</li>
+    </ul>
+  </div>
+
+  <h3 class="section-h">Questions people actually ask</h3>
+  <div id="faqList"></div>
 </div>
 
 <footer>This app never places trades. Every order is placed by you, in your own broker, yourself.</footer>
@@ -524,6 +599,51 @@ if (new URLSearchParams(location.search).has('step')) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
+
+const FAQ = [
+  {
+    q: "Is this a licensed financial advisor?",
+    a: "No. Cardinal Personal is a research and analysis tool, not a registered investment advisor. Its agents surface fundamentals, risk, and tax framing on your real holdings so you can make your own informed decisions — it's not a substitute for a licensed advisor, especially for complex situations (estate planning, business ownership, major life transitions). Think of it as a very well-informed research assistant, not a fiduciary."
+  },
+  {
+    q: "I've never invested before — is this too advanced for me?",
+    a: "It's built for exactly this. The free Learn to Invest guide (no account needed) covers the basics in plain language, and the AI Assistant is instructed to explain any term you don't recognize rather than assume you know it. If you understand what a savings account is, you have enough to start."
+  },
+  {
+    q: "What accounts can I connect?",
+    a: "Any bank or brokerage supported by Plaid (which covers most major U.S. institutions), or a Charles Schwab account directly if you'd rather register your own developer app with Schwab. Either way, the connection is read-only."
+  },
+  {
+    q: "Can this app buy, sell, or move money for me?",
+    a: "No, never, on purpose. No route in this app can place, modify, or cancel a trade, or move a dollar anywhere. It shows you real analysis; every actual decision and every order happens in your own broker's app, by you."
+  },
+  {
+    q: "What exactly does it access?",
+    a: "Read-only position data — what you hold and its value. Plaid and Schwab hand back a token, never your actual login credentials, and that token is encrypted at rest (AES-256) on our end. We can't see your password, and we can't initiate a transaction."
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes — no contract, no cancellation fee. Manage or cancel your subscription anytime from the Billing tab; it takes effect at the end of your current billing period, same as any normal subscription."
+  },
+  {
+    q: "Is this tax or legal advice?",
+    a: "No. The Tax Strategist agent explains general framing (like how tax-loss harvesting or the wash-sale rule works) but this isn't personalized tax or legal advice — talk to a CPA or attorney for anything that actually depends on your full financial and tax situation."
+  },
+];
+function renderFAQ() {
+  document.getElementById('faqList').innerHTML = FAQ.map((f, i) => `
+    <div class="faq-item">
+      <div class="faq-q" data-faq-idx="${i}"><span>${f.q}</span><span class="faq-chevron">▾</span></div>
+      <div class="faq-a">${f.a}</div>
+    </div>
+  `).join('');
+}
+document.getElementById('faqList').addEventListener('click', (e) => {
+  const q = e.target.closest('.faq-q');
+  if (!q) return;
+  q.closest('.faq-item').classList.toggle('open');
+});
+renderFAQ();
 
 refreshState();
 </script>
