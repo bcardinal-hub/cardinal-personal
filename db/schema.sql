@@ -15,6 +15,15 @@ CREATE TABLE users (
   -- the prompt — every user can change or clear their own), matching the
   -- founder's own explicit feedback that became the starting default.
   trade_idea_max_price NUMERIC DEFAULT 40,
+  -- Optional personal financial profile — powers the self-directed
+  -- Retirement Outlook (lib/opportunityEngine.js personalRetirementOutlook),
+  -- the same simplified projection math households already get, now
+  -- available to a solo user off their own synced holdings. All nullable;
+  -- the outlook simply doesn't compute until a person fills these in.
+  date_of_birth DATE,
+  retirement_target_age INTEGER,
+  monthly_expenses NUMERIC,
+  monthly_contribution NUMERIC,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

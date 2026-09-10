@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { cancelSubscriptionImmediately } from "../lib/stripe.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
 import { rateLimit } from "../lib/rateLimit.js";
+import { personalRetirementOutlook } from "../lib/opportunityEngine.js";
 
 const router = express.Router();
 
@@ -144,6 +145,45 @@ router.patch("/preferences", async (req, res) => {
   }
   await req.db.query("UPDATE users SET trade_idea_max_price = $1 WHERE id = $2", [tradeIdeaMaxPrice, req.session.userId]);
   res.json({ ok: true, tradeIdeaMaxPrice });
+});
+
+// Optional personal financial profile — powers the self-directed
+// Retirement Outlook below. All fields nullable/optional.
+router.get("/profile", async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
+  const { rows } = await req.db.query(
+    "SELECT date_of_birth, retirement_target_age, monthly_expenses, monthly_contribution FROM users WHERE id = $1",
+    [req.session.userId]
+  );
+  res.json(rows[0] || {});
+});
+
+router.patch("/profile", async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
+  const fields = ["date_of_birth", "retirement_target_age", "monthly_expenses", "monthly_contribution"];
+  const updates = fields.filter((f) => req.body[f] !== undefined);
+  if (!updates.length) return res.status(400).json({ error: "No fields to update." });
+  const setClause = updates.map((f, i) => `${f} = $${i + 1}`).join(", ");
+  const values = updates.map((f) => req.body[f]);
+  await req.db.query(`UPDATE users SET ${setClause} WHERE id = $${updates.length + 1}`, [...values, req.session.userId]);
+  res.json({ ok: true });
+});
+
+// Deterministic (no AI call) — real synced holdings value + the profile
+// above, run through the same simplified projection math households get.
+// Returns hasProfile:false rather than an error when there isn't enough
+// data yet; the frontend's empty state handles prompting for it.
+router.get("/retirement-outlook", async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
+  const [{ rows: profileRows }, { rows: holdings }] = await Promise.all([
+    req.db.query(
+      "SELECT date_of_birth, retirement_target_age, monthly_expenses, monthly_contribution FROM users WHERE id = $1",
+      [req.session.userId]
+    ),
+    req.db.query("SELECT market_value FROM holdings WHERE user_id = $1", [req.session.userId]),
+  ]);
+  const outlook = personalRetirementOutlook(holdings, profileRows[0]);
+  res.json(outlook ? { hasProfile: true, ...outlook } : { hasProfile: false });
 });
 
 // Not covered by the app-wide requireLogin wrapper (server.js applies that

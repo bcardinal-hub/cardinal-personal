@@ -614,6 +614,25 @@
     <div class="panel">
       <div id="posTableWrap"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>
     </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="detail-section-head">
+        <h3>Retirement Outlook</h3>
+        <span class="add-toggle" id="retirementToggle">Edit profile</span>
+      </div>
+      <div id="retirementBody"><div class="skeleton skeleton-row"></div></div>
+      <div class="add-form" id="retirementForm-wrap">
+        <div class="field-row">
+          <div class="field"><label>Date of birth</label><input type="date" id="rtDob" /></div>
+          <div class="field"><label>Target retirement age</label><input type="number" id="rtTargetAge" min="1" max="100" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Monthly expenses ($)</label><input type="number" id="rtExpenses" min="0" step="1" /></div>
+          <div class="field"><label>Monthly contribution ($, optional)</label><input type="number" id="rtContribution" min="0" step="1" /></div>
+        </div>
+        <button class="btn secondary" id="saveRetirementProfileBtn" style="padding:8px 14px;font-size:12px">Save</button>
+      </div>
+    </div>
   </section>
 
   <!-- Terminal -->
@@ -863,7 +882,7 @@ function activateTab(tab) {
 
   if (!loaded.has(tab)) {
     loaded.add(tab);
-    if (tab === 'positions') loadPositions();
+    if (tab === 'positions') { loadPositions(); loadRetirementOutlook(); }
     if (tab === 'market') loadSnapshot('overview', 'marketPanel');
     if (tab === 'news') loadNewsFeed(false);
     if (tab === 'assistant') loadChat();
@@ -1003,6 +1022,73 @@ document.getElementById('resyncBtn').addEventListener('click', async () => {
     if (failed.length) toast(failed.map(f => f.j.error).join(' / '), 'error');
     else toast('Positions synced.', 'success');
     await loadPositions();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+
+// ---- Retirement Outlook (deterministic — real holdings + your own profile) ----
+async function loadRetirementOutlook() {
+  const body = document.getElementById('retirementBody');
+  try {
+    const [outlookR, profileR] = await Promise.all([fetch('/auth/retirement-outlook'), fetch('/auth/profile')]);
+    const outlook = await outlookR.json();
+    const profile = await profileR.json();
+
+    document.getElementById('rtDob').value = profile.date_of_birth ? profile.date_of_birth.slice(0, 10) : '';
+    document.getElementById('rtTargetAge').value = profile.retirement_target_age ?? '';
+    document.getElementById('rtExpenses').value = profile.monthly_expenses ?? '';
+    document.getElementById('rtContribution').value = profile.monthly_contribution ?? '';
+
+    if (!outlook.hasProfile) {
+      body.innerHTML = `<p class="empty">Add your date of birth, target retirement age, and monthly expenses to see a real projection off your actual synced holdings — click "Edit profile" above. This is simplified math (a constant assumed growth rate, the "4% rule" for the target), not a full retirement plan.</p>`;
+      return;
+    }
+
+    const fmtK = (n) => fmt$(Math.round(n));
+    body.innerHTML = `
+      <div class="stats" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-label">Projected at ${outlook.targetAge}</div><div class="stat-value ${outlook.onTrack ? 'up' : 'down'}">${fmtK(outlook.projected)}</div></div>
+        <div class="stat-card"><div class="stat-label">Target (4% rule)</div><div class="stat-value">${fmtK(outlook.target)}</div></div>
+        <div class="stat-card"><div class="stat-label">${outlook.onTrack ? 'Surplus' : 'Gap'}</div><div class="stat-value ${outlook.onTrack ? 'up' : 'down'}">${fmtK(Math.abs(outlook.gap))}</div></div>
+        <div class="stat-card"><div class="stat-label">Years to go</div><div class="stat-value">${outlook.years}</div></div>
+      </div>
+      <p class="opp-next-step" style="margin:0">
+        ${outlook.onTrack
+          ? `On the numbers you've entered, your current holdings (${fmtK(outlook.retirementAssets)}) growing at an assumed ${(outlook.assumedGrowthRate * 100).toFixed(0)}%/yr${outlook.annualContribution ? `, plus ${fmt$(outlook.annualContribution)}/yr in contributions,` : ''} project to ${fmtK(outlook.projected)} by age ${outlook.targetAge} — at or above the ${fmtK(outlook.target)} target (25x your $${Math.round(outlook.annualExpenses).toLocaleString()}/yr expenses, the "4% rule"). Good position — this doesn't account for market volatility, taxes, or changes to your spending, so revisit it as your situation changes.`
+          : `On the numbers you've entered, your current holdings (${fmtK(outlook.retirementAssets)}) growing at an assumed ${(outlook.assumedGrowthRate * 100).toFixed(0)}%/yr${outlook.annualContribution ? `, plus ${fmt$(outlook.annualContribution)}/yr in contributions,` : ''} project to roughly ${fmtK(outlook.projected)} by age ${outlook.targetAge} — short of the ${fmtK(outlook.target)} target (25x your $${Math.round(outlook.annualExpenses).toLocaleString()}/yr expenses, the "4% rule") by about ${fmtK(outlook.gap)}. Increasing contributions, adjusting your timeline, or revisiting your expense target are the usual levers — this is simplified math, not a full plan, so treat it as a starting point for the conversation, not a verdict.`
+        }
+      </p>
+    `;
+  } catch (e) {
+    body.innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+document.getElementById('retirementToggle').addEventListener('click', () => toggleAddForm('retirementForm'));
+document.getElementById('saveRetirementProfileBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('saveRetirementProfileBtn');
+  const dob = document.getElementById('rtDob').value;
+  const targetAge = document.getElementById('rtTargetAge').value;
+  const expenses = document.getElementById('rtExpenses').value;
+  const contribution = document.getElementById('rtContribution').value;
+  setBtnLoading(btn, 'Saving…');
+  try {
+    const r = await fetch('/auth/profile', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date_of_birth: dob || null,
+        retirement_target_age: targetAge ? Number(targetAge) : null,
+        monthly_expenses: expenses ? Number(expenses) : null,
+        monthly_contribution: contribution ? Number(contribution) : null,
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Could not save.', 'error'); return; }
+    toast('Profile saved.', 'success');
+    document.getElementById('retirementForm-wrap').classList.remove('open');
+    await loadRetirementOutlook();
   } catch (e) {
     toast('Could not reach the server: ' + e.message, 'error');
   } finally {
