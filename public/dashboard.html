@@ -229,6 +229,7 @@
   .pill.source-det { background: rgba(31,122,82,0.12); color: var(--green); }
   .pill.source-ai { background: rgba(156,122,60,0.14); color: var(--gold); }
   .rec-card.ai-idea { border-left: 3px solid var(--accent-2); }
+  .rec-card.high-risk-idea { border-left: 3px solid var(--danger); }
   .opp-badges { display: flex; gap: 6px; align-items: center; }
   .opp-impact { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
   .opp-impact.negative { color: var(--danger); }
@@ -720,6 +721,14 @@
         <button class="btn secondary" id="scanOptionsBtn" style="padding:8px 14px;font-size:12px">Scan for options ideas</button>
       </div>
       <p class="opp-next-step" style="margin-top:0">⚑ Options carry meaningfully more risk than the ideas above — leverage, time decay, assignment — and your broker requires separate approval to trade them. These are strategy-level research prompts only, never specific strikes or premiums (no live options-chain data feeds this). Look up real pricing yourself before doing anything.</p>
+    </div>
+
+    <div class="panel" style="margin-top:24px;border-color:rgba(173,61,61,0.3)">
+      <div class="detail-section-head">
+        <h3 style="color:var(--danger)">Day Trading Setups</h3>
+        <button class="btn secondary" id="scanDayTradingBtn" style="padding:8px 14px;font-size:12px;border-color:rgba(173,61,61,0.35);color:var(--danger)">Scan for setups</button>
+      </div>
+      <p class="opp-next-step" style="margin-top:0;border-left-color:var(--danger);background:var(--danger-glow)">⚑ This is the highest-risk category of idea this app produces. Most retail day traders lose money over time — this isn't a disclaimer to skip past, it's the actual base rate. There's no live intraday data feeding this: "watch for" levels are real, searched technical context, never live ticks, and never a directive to buy or sell at a specific time. Verify everything against real-time charts yourself before acting on anything here.</p>
     </div>
   </section>
 
@@ -1478,6 +1487,7 @@ const DESK_ROSTER = [
   { initials: 'RO', title: 'Chief Risk Officer', blurb: 'Flags what could go wrong, not just what looks good.' },
   { initials: 'TX', title: 'Tax Strategist', blurb: 'Loss harvesting and gains-timing framing.' },
   { initials: 'TD', title: 'Trade Ideas Desk', blurb: 'Scans for setups worth a look — see Opportunities.' },
+  { initials: 'DT', title: 'Day Trading Desk', blurb: 'Highest-risk, opt-in short-term setups — see Opportunities.' },
   { initials: 'OS', title: 'Options Strategist', blurb: 'Strategy-level options ideas — see Opportunities.' },
   { initials: 'MS', title: 'Market Strategist', blurb: 'Daily tape roundup — see Market.' },
 ];
@@ -1575,11 +1585,13 @@ let oppFilter = 'pending';
 function oppCardHtml(o) {
   const impactCls = o.financial_impact == null ? '' : Number(o.financial_impact) < 0 ? 'negative' : 'positive';
   const isAi = o.source === 'ai';
+  const isHighRisk = o.category.startsWith('Day Trading Setup');
   return `
-    <div class="rec-card ${isAi ? 'ai-idea' : ''}" data-id="${o.id}">
+    <div class="rec-card ${isHighRisk ? 'high-risk-idea' : isAi ? 'ai-idea' : ''}" data-id="${o.id}">
       <div class="rec-head">
         <span><span class="rec-agent">${o.category}</span><span class="rec-time">${timeAgo(o.created_at)}</span></span>
         <div class="opp-badges">
+          ${isHighRisk ? '<span class="pill priority-high">⚑ high risk</span>' : ''}
           <span class="pill ${isAi ? 'source-ai' : 'source-det'}">${isAi ? '✦ AI idea' : '# deterministic'}</span>
           <span class="pill priority-${o.priority}">${o.priority} priority</span>
         </div>
@@ -1641,6 +1653,21 @@ document.getElementById('scanOptionsBtn').addEventListener('click', async () => 
     const j = await r.json();
     if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
     toast(j.found ? `Found ${j.found} options idea${j.found === 1 ? '' : 's'}.` : 'Nothing stood out right now.', 'success');
+    await loadPersonalOpportunities();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+  } finally {
+    resetBtn(btn);
+  }
+});
+document.getElementById('scanDayTradingBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('scanDayTradingBtn');
+  setBtnLoading(btn, 'Scanning…');
+  try {
+    const r = await fetch('/opportunities/scan/daytrading', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Scan failed.', 'error'); return; }
+    toast(j.found ? `Found ${j.found} setup${j.found === 1 ? '' : 's'} — high risk, verify everything yourself.` : 'Nothing stood out right now.', 'success');
     await loadPersonalOpportunities();
   } catch (e) {
     toast('Could not reach the server: ' + e.message, 'error');

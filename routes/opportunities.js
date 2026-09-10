@@ -2,6 +2,7 @@ import express from "express";
 import { scanHousehold, scanPersonalPortfolio } from "../lib/opportunityEngine.js";
 import { scanForTradeIdeas } from "../lib/tradeIdeas.js";
 import { scanForOptionsIdeas } from "../lib/optionsIdeas.js";
+import { scanForDayTradingIdeas } from "../lib/dayTradingIdeas.js";
 import { requireSubscription } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
 
@@ -25,6 +26,15 @@ const optionsScanCooldown = cooldown({
   query: (req) =>
     req.db.query(
       "SELECT created_at FROM opportunities WHERE user_id = $1 AND household_id IS NULL AND category LIKE 'Options Idea%' ORDER BY created_at DESC LIMIT 1",
+      [req.session.userId]
+    ),
+});
+const dayTradingScanCooldown = cooldown({
+  minutes: 10,
+  label: "Day trading scan",
+  query: (req) =>
+    req.db.query(
+      "SELECT created_at FROM opportunities WHERE user_id = $1 AND household_id IS NULL AND category LIKE 'Day Trading Setup%' ORDER BY created_at DESC LIMIT 1",
       [req.session.userId]
     ),
 });
@@ -141,6 +151,20 @@ router.post("/scan/options", requireSubscription, optionsScanCooldown, async (re
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
     const found = await scanForOptionsIdeas(holdings);
+    const inserted = await insertOpportunities(req.db, req.session.userId, null, found, "ai");
+    res.json({ ok: true, found: inserted.length, opportunities: inserted });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Separate, explicitly-triggered scan — the highest-risk idea category this
+// app produces (see lib/dayTradingIdeas.js for the full reasoning). Never
+// bundled into the general scan; a person has to specifically ask for this.
+router.post("/scan/daytrading", requireSubscription, dayTradingScanCooldown, async (req, res) => {
+  const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
+  try {
+    const found = await scanForDayTradingIdeas(holdings);
     const inserted = await insertOpportunities(req.db, req.session.userId, null, found, "ai");
     res.json({ ok: true, found: inserted.length, opportunities: inserted });
   } catch (e) {
