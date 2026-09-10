@@ -22,7 +22,7 @@ router.post("/chat", requireSubscription, async (req, res) => {
       message,
     ]);
 
-    const [{ rows: history }, { rows: holdings }, { rows: recommendations }] = await Promise.all([
+    const [{ rows: history }, { rows: holdings }, { rows: recommendations }, { rows: opportunities }] = await Promise.all([
       req.db.query("SELECT role, content FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC", [
         req.session.userId,
       ]),
@@ -34,9 +34,18 @@ router.post("/chat", requireSubscription, async (req, res) => {
         "SELECT agent, summary FROM recommendations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10",
         [req.session.userId]
       ),
+      // Recent AI idea callouts (Trade Ideas/Options/Day Trading) plus
+      // their real graded outcome if one exists yet — so someone can ask
+      // "what happened with that AAPL day-trading idea" and the assistant
+      // actually knows, instead of only knowing about the 7-agent desk.
+      req.db.query(
+        `SELECT category, explanation, price_at_callout, price_at_review, pct_change, reviewed_at, created_at
+         FROM opportunities WHERE user_id = $1 AND source = 'ai' ORDER BY created_at DESC LIMIT 10`,
+        [req.session.userId]
+      ),
     ]);
 
-    const reply = await runChatTurn(history, holdings, recommendations);
+    const reply = await runChatTurn(history, holdings, recommendations, opportunities);
 
     const { rows: inserted } = await req.db.query(
       "INSERT INTO chat_messages (user_id, role, content) VALUES ($1, 'assistant', $2) RETURNING role, content, created_at",
