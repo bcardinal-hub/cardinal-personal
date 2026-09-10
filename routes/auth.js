@@ -124,6 +124,28 @@ router.post("/logout", (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
 });
 
+// Per-user preferences — not covered by requireLogin for the same reason
+// as delete-account above. Currently just the Trade Ideas price
+// preference; a real, adjustable setting per user rather than a value
+// hardcoded into the prompt for everyone.
+router.get("/preferences", async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
+  const { rows } = await req.db.query("SELECT trade_idea_max_price FROM users WHERE id = $1", [req.session.userId]);
+  res.json({ tradeIdeaMaxPrice: rows[0]?.trade_idea_max_price ?? null });
+});
+
+router.patch("/preferences", async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
+  const { tradeIdeaMaxPrice } = req.body;
+  // Explicit null clears the preference (no price constraint); anything
+  // else must be a positive number.
+  if (tradeIdeaMaxPrice !== null && (typeof tradeIdeaMaxPrice !== "number" || tradeIdeaMaxPrice <= 0)) {
+    return res.status(400).json({ error: "Price must be a positive number, or null to clear it." });
+  }
+  await req.db.query("UPDATE users SET trade_idea_max_price = $1 WHERE id = $2", [tradeIdeaMaxPrice, req.session.userId]);
+  res.json({ ok: true, tradeIdeaMaxPrice });
+});
+
 // Not covered by the app-wide requireLogin wrapper (server.js applies that
 // per-router, and /auth has to stay reachable while logged out for
 // login/signup) — so this route checks the session itself.

@@ -121,9 +121,10 @@ router.get("/household/:householdId", async (req, res) => {
 // independently (web search hiccup, rate limit, etc.) without losing the
 // deterministic results.
 router.post("/scan/personal", requireSubscription, personalScanCooldown, async (req, res) => {
-  const [{ rows: holdings }, { rows: recommendations }] = await Promise.all([
+  const [{ rows: holdings }, { rows: recommendations }, { rows: userRows }] = await Promise.all([
     req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]),
     req.db.query("SELECT * FROM recommendations WHERE user_id = $1", [req.session.userId]),
+    req.db.query("SELECT trade_idea_max_price FROM users WHERE id = $1", [req.session.userId]),
   ]);
 
   const deterministicFound = scanPersonalPortfolio({ holdings, recommendations });
@@ -133,7 +134,8 @@ router.post("/scan/personal", requireSubscription, personalScanCooldown, async (
   let aiError = null;
   try {
     const trackRecord = await getTrackRecordSummary(req.db, req.session.userId, "Trade Idea");
-    const aiFound = await scanForTradeIdeas(holdings, trackRecord);
+    const maxPrice = userRows[0]?.trade_idea_max_price ? Number(userRows[0].trade_idea_max_price) : null;
+    const aiFound = await scanForTradeIdeas(holdings, trackRecord, maxPrice);
     aiInserted = await insertOpportunities(req.db, req.session.userId, null, aiFound, "ai");
   } catch (e) {
     aiError = e.message;

@@ -9,6 +9,12 @@ CREATE TABLE users (
   -- A stolen DB backup shouldn't be enough to take over accounts via reset.
   reset_token_hash TEXT,
   reset_token_expires TIMESTAMPTZ,
+  -- Trade Ideas preference: bias new (not-currently-held) ideas toward
+  -- stocks at or under this price. NULL = no preference, use judgment.
+  -- Defaults to 40 as the app's working default (not a hardcoded value in
+  -- the prompt — every user can change or clear their own), matching the
+  -- founder's own explicit feedback that became the starting default.
+  trade_idea_max_price NUMERIC DEFAULT 40,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
