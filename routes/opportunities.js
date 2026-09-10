@@ -5,6 +5,7 @@ import { scanForOptionsIdeas } from "../lib/optionsIdeas.js";
 import { scanForDayTradingIdeas } from "../lib/dayTradingIdeas.js";
 import { requireSubscription, requirePro } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
+import { recordCalloutPrice, reviewDueOutcomes, getTrackRecordSummary } from "../lib/trackRecord.js";
 
 const router = express.Router();
 
@@ -61,6 +62,11 @@ async function insertOpportunities(db, userId, householdId, found, source = "det
       ]
     );
     inserted.push(rows[0]);
+    // Track-record capture — best-effort, never blocks the scan response
+    // itself. See lib/trackRecord.js.
+    if (source === "ai" && opp.supporting_data?.ticker) {
+      await recordCalloutPrice(db, rows[0].id, opp.supporting_data.ticker);
+    }
   }
   return inserted;
 }
@@ -125,7 +131,8 @@ router.post("/scan/personal", requireSubscription, personalScanCooldown, async (
   let aiInserted = [];
   let aiError = null;
   try {
-    const aiFound = await scanForTradeIdeas(holdings);
+    const trackRecord = await getTrackRecordSummary(req.db, req.session.userId, "Trade Idea");
+    const aiFound = await scanForTradeIdeas(holdings, trackRecord);
     aiInserted = await insertOpportunities(req.db, req.session.userId, null, aiFound, "ai");
   } catch (e) {
     aiError = e.message;
@@ -136,6 +143,9 @@ router.post("/scan/personal", requireSubscription, personalScanCooldown, async (
 });
 
 router.get("/personal", async (req, res) => {
+  // Lazily grades any callouts whose review window has passed — no
+  // scheduler needed, just runs whenever the list is actually viewed.
+  await reviewDueOutcomes(req.db, req.session.userId);
   const { rows } = await req.db.query(
     "SELECT * FROM opportunities WHERE household_id IS NULL AND user_id = $1 ORDER BY created_at DESC",
     [req.session.userId]
@@ -150,7 +160,8 @@ router.get("/personal", async (req, res) => {
 router.post("/scan/options", requirePro, optionsScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
-    const found = await scanForOptionsIdeas(holdings);
+    const trackRecord = await getTrackRecordSummary(req.db, req.session.userId, "Options Idea");
+    const found = await scanForOptionsIdeas(holdings, trackRecord);
     const inserted = await insertOpportunities(req.db, req.session.userId, null, found, "ai");
     res.json({ ok: true, found: inserted.length, opportunities: inserted });
   } catch (e) {
@@ -164,7 +175,8 @@ router.post("/scan/options", requirePro, optionsScanCooldown, async (req, res) =
 router.post("/scan/daytrading", requirePro, dayTradingScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
-    const found = await scanForDayTradingIdeas(holdings);
+    const trackRecord = await getTrackRecordSummary(req.db, req.session.userId, "Day Trading Setup");
+    const found = await scanForDayTradingIdeas(holdings, trackRecord);
     const inserted = await insertOpportunities(req.db, req.session.userId, null, found, "ai");
     res.json({ ok: true, found: inserted.length, opportunities: inserted });
   } catch (e) {

@@ -203,6 +203,21 @@ const GUIDE = [
     `,
   },
   {
+    title: "How options actually work",
+    body: `
+      <p>An <strong>option</strong> is a contract, not a stock — it gives you the right (not the obligation) to buy or sell 100 shares of a stock at a set price (the <strong>strike price</strong>) by a set date (the <strong>expiration date</strong>). You pay (or receive) a price for that contract called the <strong>premium</strong>. Options are meaningfully higher risk than owning the stock directly — that's why every broker makes you apply for a separate approval tier before you can trade them.</p>
+      <p><strong>Calls</strong> give you the right to buy at the strike price — you'd want one if you think the stock is going up. <strong>Puts</strong> give you the right to sell at the strike price — you'd want one if you think the stock is going down, or want to protect a position you already own.</p>
+      <p>Four common strategies, all ways of using options around stock you already hold rather than speculative bets on stock you don't:</p>
+      <ul>
+        <li><strong>Covered call</strong> — you own the shares and sell a call against them, collecting the premium as income. The tradeoff: if the stock rises above the strike, your shares can get "called away" (sold) at that price, capping your upside.</li>
+        <li><strong>Cash-secured put</strong> — you set aside cash and sell a put on a stock you'd be happy to own at a lower price. If it drops to the strike, you buy the shares (that's the point); if it doesn't, you keep the premium.</li>
+        <li><strong>Protective put</strong> — you own the shares and buy a put as insurance, capping your downside if the stock drops, in exchange for paying the premium.</li>
+        <li><strong>Collar</strong> — you own the shares, buy a protective put, and sell a call to help pay for it — caps both your downside and your upside, often used to protect a large, concentrated gain without selling and triggering taxes.</li>
+      </ul>
+      <p>The real risk to understand: options can expire completely worthless (100% loss of the premium you paid), and selling options you're not prepared to fulfill can expose you to losses larger than what you put in. The strategies above are the more conservative, income/protection-oriented end of options trading — but "more conservative than the riskiest version" still means genuinely more risk than just owning the stock.</p>
+    `,
+  },
+  {
     title: "What Cardinal Personal actually does once you're ready",
     body: `
       <p>Connect a real account so everything is grounded in your actual money, not a hypothetical. From there, a 10-role research desk — Equity Research, Risk, Tax, and more — reviews your real holdings and explains what it sees, in plain language, every time. Deterministic math (like tax-loss harvesting checks) is always labeled separately from AI judgment calls, so you always know which is which.</p>
@@ -263,6 +278,12 @@ const GLOSSARY = [
   { term: 'Risk Tolerance', tag: 'Risk', def: 'How much loss you can handle, both financially and emotionally, without panic-selling at the worst possible time.' },
   { term: 'Concentration Risk', tag: 'Risk', def: 'The danger of having too much money in one stock, sector, or bet.' },
   { term: 'Options', tag: 'Risk', def: 'Contracts that give the right (not obligation) to buy or sell a stock at a set price by a set date. Meaningfully higher risk than owning the stock directly.' },
+  { term: 'Call Option', tag: 'Risk', def: 'The right to buy a stock at a set price — worth more as the stock rises. Selling one against shares you own is a "covered call."' },
+  { term: 'Put Option', tag: 'Risk', def: 'The right to sell a stock at a set price — worth more as the stock falls. Buying one to protect shares you own is a "protective put."' },
+  { term: 'Strike Price', tag: 'Risk', def: 'The fixed price at which an option lets you buy (call) or sell (put) the underlying stock, regardless of where the stock actually trades.' },
+  { term: 'Premium (Options)', tag: 'Risk', def: 'The price you pay (as a buyer) or receive (as a seller) for an options contract. If you buy an option and it expires worthless, the premium is a 100% loss.' },
+  { term: 'Expiration Date', tag: 'Risk', def: 'The last date an option contract is valid. After this, it either gets exercised or expires worthless.' },
+  { term: 'Assignment', tag: 'Risk', def: 'What happens when the other side of an option contract exercises their right — e.g., your covered call gets assigned means your shares were sold at the strike price.' },
   { term: 'Wash Sale', tag: 'Basics', def: `An IRS rule: if you sell an investment at a loss and buy something "substantially identical" back within 30 days, you can't claim that loss on your taxes.` },
 ];
 

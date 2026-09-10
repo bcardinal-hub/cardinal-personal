@@ -230,6 +230,12 @@
   .pill.source-ai { background: rgba(156,122,60,0.14); color: var(--gold); }
   .rec-card.ai-idea { border-left: 3px solid var(--accent-2); }
   .rec-card.high-risk-idea { border-left: 3px solid var(--danger); }
+  .opp-outcome {
+    font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 8px;
+    margin-bottom: 10px; background: var(--panel-3); color: var(--dim);
+  }
+  .opp-outcome.up { color: var(--green); background: rgba(31,122,82,0.1); }
+  .opp-outcome.down { color: var(--danger); background: var(--danger-glow); }
   .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
   @media (max-width: 560px) { .plan-grid { grid-template-columns: 1fr; } }
   .opp-badges { display: flex; gap: 6px; align-items: center; }
@@ -1380,6 +1386,21 @@ const GUIDE = [
     `,
   },
   {
+    title: "How options actually work",
+    body: `
+      <p>An <strong>option</strong> is a contract, not a stock — it gives you the right (not the obligation) to buy or sell 100 shares of a stock at a set price (the <strong>strike price</strong>) by a set date (the <strong>expiration date</strong>). You pay (or receive) a price for that contract called the <strong>premium</strong>. Options are meaningfully higher risk than owning the stock directly — that's why every broker makes you apply for a separate approval tier before you can trade them.</p>
+      <p><strong>Calls</strong> give you the right to buy at the strike price — you'd want one if you think the stock is going up. <strong>Puts</strong> give you the right to sell at the strike price — you'd want one if you think the stock is going down, or want to protect a position you already own.</p>
+      <p>The four strategies this app's Options Strategist researches are all ways of using options around stock you already hold, not speculative bets on stock you don't:</p>
+      <ul>
+        <li><strong>Covered call</strong> — you own the shares and sell a call against them, collecting the premium as income. The tradeoff: if the stock rises above the strike, your shares can get "called away" (sold) at that price, capping your upside.</li>
+        <li><strong>Cash-secured put</strong> — you set aside cash and sell a put on a stock you'd be happy to own at a lower price. If it drops to the strike, you buy the shares (that's the point); if it doesn't, you keep the premium.</li>
+        <li><strong>Protective put</strong> — you own the shares and buy a put as insurance, capping your downside if the stock drops, in exchange for paying the premium.</li>
+        <li><strong>Collar</strong> — you own the shares, buy a protective put, and sell a call to help pay for it — caps both your downside and your upside, often used to protect a large, concentrated gain without selling and triggering taxes.</li>
+      </ul>
+      <p>The real risk to understand: options can expire completely worthless (100% loss of the premium you paid), and selling options you're not prepared to fulfill (an uncovered/"naked" call, for example) can expose you to losses larger than what you put in. The strategies above are the more conservative, income/protection-oriented end of options trading — not the leveraged, speculative end — but "more conservative than the riskiest version" still means genuinely more risk than just owning the stock. This app's Options Strategist never invents specific strike prices or premiums (it has no live options-chain data) — you look up real, current pricing yourself in your own broker before doing anything.</p>
+    `,
+  },
+  {
     title: "How to actually use this app once you're ready",
     body: `
       <p>Connect a real account (Positions tab) so everything below is grounded in your actual money, not a hypothetical. From there:</p>
@@ -1445,6 +1466,12 @@ const GLOSSARY = [
   { term: 'Risk Tolerance', tag: 'Risk', def: 'How much loss you can handle, both financially and emotionally, without panic-selling at the worst possible time.' },
   { term: 'Concentration Risk', tag: 'Risk', def: `The danger of having too much money in one stock, sector, or bet — this app's Chief Risk Officer specifically watches for this.` },
   { term: 'Options', tag: 'Risk', def: 'Contracts that give the right (not obligation) to buy or sell a stock at a set price by a set date. Meaningfully higher risk than owning the stock directly — see the Options Strategist section in Opportunities.' },
+  { term: 'Call Option', tag: 'Risk', def: 'The right to buy a stock at a set price — worth more as the stock rises. Selling one against shares you own is a "covered call."' },
+  { term: 'Put Option', tag: 'Risk', def: 'The right to sell a stock at a set price — worth more as the stock falls. Buying one to protect shares you own is a "protective put."' },
+  { term: 'Strike Price', tag: 'Risk', def: 'The fixed price at which an option lets you buy (call) or sell (put) the underlying stock, regardless of where the stock actually trades.' },
+  { term: 'Premium (Options)', tag: 'Risk', def: 'The price you pay (as a buyer) or receive (as a seller) for an options contract. If you buy an option and it expires worthless, the premium is a 100% loss.' },
+  { term: 'Expiration Date', tag: 'Risk', def: 'The last date an option contract is valid. After this, it either gets exercised or expires worthless.' },
+  { term: 'Assignment', tag: 'Risk', def: 'What happens when the other side of an option contract exercises their right — e.g., your covered call gets assigned means your shares were sold at the strike price.' },
   { term: 'Wash Sale', tag: 'Basics', def: `An IRS rule: if you sell an investment at a loss and buy something "substantially identical" back within 30 days, you can't claim that loss on your taxes. Relevant to tax-loss harvesting.` },
 ];
 
@@ -1584,6 +1611,22 @@ document.getElementById('runAnalysisBtn').addEventListener('click', async () => 
 let allOpportunities = [];
 let oppFilter = 'pending';
 
+// Real, deterministic outcome tracking — a Finnhub quote captured at
+// callout time vs. one captured once the review window passed (see
+// lib/trackRecord.js). Never an AI "hit/miss" judgment, just the actual
+// number, so you can judge the callout yourself.
+function oppOutcomeHtml(o) {
+  const ticker = o.supporting_data?.ticker;
+  const pct = Number(o.pct_change);
+  const cls = pct >= 0 ? 'up' : 'down';
+  return `
+    <div class="opp-outcome ${cls}">
+      📊 Since this callout${ticker ? ` (${ticker})` : ''}: $${Number(o.price_at_callout).toFixed(2)} → $${Number(o.price_at_review).toFixed(2)}
+      <strong>(${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)</strong>
+    </div>
+  `;
+}
+
 function oppCardHtml(o) {
   const impactCls = o.financial_impact == null ? '' : Number(o.financial_impact) < 0 ? 'negative' : 'positive';
   const isAi = o.source === 'ai';
@@ -1599,6 +1642,7 @@ function oppCardHtml(o) {
         </div>
       </div>
       ${o.financial_impact != null ? `<div class="opp-impact ${impactCls}">${fmt$(Math.abs(o.financial_impact))}${Number(o.financial_impact) < 0 ? ' idle/short' : ' impact'}</div>` : ''}
+      ${o.reviewed_at ? oppOutcomeHtml(o) : ''}
       <div class="rec-summary">${o.explanation}</div>
       <div class="opp-next-step"><strong>Next step:</strong> ${o.recommended_next_step}</div>
       ${o.specialist_review_required ? '<div class="specialist-flag" style="margin-bottom:10px">⚑ Specialist review recommended</div>' : ''}

@@ -229,5 +229,16 @@ CREATE TABLE opportunities (
   recommended_next_step TEXT NOT NULL,
   specialist_review_required BOOLEAN NOT NULL DEFAULT false,
   status TEXT NOT NULL DEFAULT 'pending_review' CHECK (status IN ('pending_review', 'approved', 'edited', 'rejected')),
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  -- Track record for AI idea callouts (Trade Ideas, Options, Day Trading).
+  -- Deliberately deterministic, never AI self-graded: a real Finnhub quote
+  -- captured at callout time, and another captured once the idea's review
+  -- window has passed (see lib/trackRecord.js). The resulting price move
+  -- is shown to the user as-is (no "hit/miss" judgment imposed — most of
+  -- these ideas are conditional/bidirectional, not clean predictions) and
+  -- summarized back into future scans' prompts as real historical context.
+  price_at_callout NUMERIC,
+  price_at_review NUMERIC,
+  pct_change NUMERIC,
+  reviewed_at TIMESTAMPTZ
 );
