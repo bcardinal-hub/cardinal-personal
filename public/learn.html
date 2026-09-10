@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Learn to Invest — Cardinal Personal</title>
+<meta name="description" content="A plain-language guide to investing — why it matters, how to start, and a searchable glossary of every term you'll actually run into. Free, no account required." />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon.svg" />
+<meta name="theme-color" content="#f8f5ee" />
+<meta property="og:title" content="Learn to Invest — Cardinal Personal" />
+<meta property="og:description" content="A plain-language guide to investing and a searchable glossary — free, no account required." />
+<meta property="og:type" content="website" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+  :root {
+    --bg: #f8f5ee; --panel: #ffffff; --panel-2: #f6f1e6; --panel-3: #eee5d1;
+    --border: #e5dac0; --border-soft: #ece3d0; --text: #211d16; --dim: #6e6656; --dim-2: #a49a84;
+    --navy: #16233d; --accent: #9c7a3c; --accent-2: #c9a35c; --accent-glow: rgba(156,122,60,0.20);
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.6 'Inter', -apple-system, sans-serif; margin: 0; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; }
+  a { color: var(--accent); }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border-soft); background: #fdfbf7;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(160deg, var(--accent-2), var(--navy) 130%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .brand .name { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .topbar .cta {
+    font-size: 13px; font-weight: 650; padding: 9px 18px; border-radius: 9px; text-decoration: none; color: #fff;
+    background: linear-gradient(160deg, var(--accent-2), var(--accent) 70%);
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+  .hero { text-align: center; margin-bottom: 36px; }
+  .hero h1 { font-size: 34px; font-weight: 600; margin: 0 0 14px; letter-spacing: -0.01em; }
+  .hero p { font-size: 15px; color: var(--dim); max-width: 560px; margin: 0 auto; line-height: 1.7; }
+  @media (max-width: 640px) { .hero h1 { font-size: 26px; } }
+
+  .learn-hero {
+    background: linear-gradient(160deg, var(--navy), #1e2f52); border-radius: 18px;
+    padding: 28px 30px; margin-bottom: 28px; color: #fff;
+  }
+  .learn-hero h2 { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
+  .learn-hero p { font-size: 13.5px; color: rgba(255,255,255,0.78); line-height: 1.65; margin: 0; }
+
+  .subnav { display: flex; gap: 8px; margin-bottom: 22px; }
+  .filter-chip {
+    font-size: 12.5px; font-weight: 650; padding: 8px 16px; border-radius: 20px; cursor: pointer; user-select: none;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--dim); transition: all .15s;
+  }
+  .filter-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .learn-search {
+    width: 100%; padding: 13px 16px; font-size: 14px; font-family: inherit;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 11px; color: var(--text); outline: none; margin-bottom: 18px;
+  }
+  .learn-search:focus { border-color: var(--accent); }
+
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .glossary-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 16px 18px; }
+  .glossary-term { font-family: 'Fraunces', serif; font-size: 15.5px; font-weight: 600; margin-bottom: 6px; }
+  .glossary-def { font-size: 12.5px; color: var(--dim); line-height: 1.6; }
+  .glossary-tag {
+    display: inline-block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--accent); background: rgba(156,122,60,0.1); padding: 2px 8px; border-radius: 20px; margin-bottom: 9px;
+  }
+  .empty { color: var(--dim); font-size: 13px; padding: 10px 0; }
+
+  .guide-section { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+  .guide-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px; cursor: pointer; user-select: none; }
+  .guide-head:hover { background: var(--panel-2); }
+  .guide-num {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; background: var(--panel-3); color: var(--accent);
+    font-weight: 700; font-size: 12.5px; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif;
+  }
+  .guide-title { font-size: 15.5px; font-weight: 650; flex: 1; }
+  .guide-chevron { color: var(--dim-2); font-size: 12px; transition: transform .2s ease; }
+  .guide-section.open .guide-chevron { transform: rotate(180deg); }
+  .guide-body { display: none; padding: 0 22px 22px 60px; font-size: 14px; color: var(--dim); line-height: 1.8; }
+  .guide-section.open .guide-body { display: block; }
+  .guide-body p { margin: 0 0 12px; }
+  .guide-body ul { margin: 0 0 12px; padding-left: 18px; }
+  .guide-body li { margin-bottom: 6px; }
+  .guide-body strong { color: var(--text); }
+
+  .bottom-cta {
+    text-align: center; margin-top: 44px; padding: 36px 28px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 18px;
+  }
+  .bottom-cta h3 { font-size: 19px; margin: 0 0 10px; }
+  .bottom-cta p { font-size: 13.5px; color: var(--dim); margin: 0 0 20px; }
+  .bottom-cta a {
+    display: inline-block; font-size: 14px; font-weight: 650; padding: 12px 26px; border-radius: 10px; text-decoration: none;
+    color: #fff; background: linear-gradient(160deg, var(--accent-2), var(--accent) 70%);
+  }
+  footer { text-align: center; color: var(--dim-2); font-size: 11.5px; padding: 20px 24px 40px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="/">
+    <div class="mark">🐦</div>
+    <div class="name">Cardinal Personal</div>
+  </a>
+  <a class="cta" href="/">Get started free</a>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Learn to Invest</h1>
+    <p>No jargon, no assumptions. If investing has always felt like a language you never learned, start here — free, no account required, and it stays that way.</p>
+  </div>
+
+  <div class="learn-hero">
+    <h2>You don't need to be an expert to start.</h2>
+    <p>Most people who never invest aren't held back by not having enough money — they're held back by not knowing where to start, and being afraid of looking foolish for asking. This page has no login wall and never will.</p>
+  </div>
+
+  <div class="subnav">
+    <span class="filter-chip active" data-view="guide">Getting Started</span>
+    <span class="filter-chip" data-view="glossary">Glossary</span>
+  </div>
+
+  <div id="guideView"></div>
+  <div id="glossaryView" style="display:none">
+    <input class="learn-search" id="glossarySearch" placeholder="Search a term — try 'index fund' or 'P/E'…" autocomplete="off" />
+    <div class="glossary-grid" id="glossaryGrid"></div>
+  </div>
+
+  <div class="bottom-cta">
+    <h3>Ready to see it applied to your own money?</h3>
+    <p>Connect a real account and a 10-role research desk explains your actual holdings the same plain-language way — free 7-day trial, cancel anytime.</p>
+    <a href="/">Get started free →</a>
+  </div>
+</div>
+
+<footer>Cardinal Personal never places a trade. Every decision stays yours.</footer>
+
+<script>
+const GUIDE = [
+  {
+    title: "Why bother investing at all?",
+    body: `
+      <p>Cash sitting in a checking account loses buying power every year — prices generally rise a bit faster than a checking account pays you. Investing is how you make your money grow faster than that, using two forces: the market's long-run tendency to go up over long stretches of time, and <strong>compound interest</strong> — growth on top of growth, which is slow at first and then not slow at all.</p>
+      <p>A simple way to see it: money invested and left alone tends to roughly double every ~10 years at a historical long-run stock market average. $20,000 today, left alone for 30 years, could plausibly become $150,000+ — not guaranteed, markets go up and down, but that's the shape of what "letting time do the work" means.</p>
+    `,
+  },
+  {
+    title: "Before you invest a dollar: two things first",
+    body: `
+      <p><strong>1. An emergency fund.</strong> 3–6 months of your actual expenses, sitting in a normal savings account — not invested, not touched unless something goes wrong (job loss, medical bill, car dies). Without this, a bad month can force you to sell investments at the worst possible time.</p>
+      <p><strong>2. High-interest debt.</strong> If you're carrying credit card debt at 20%+ interest, paying that off is a better use of money than investing it — you'd need to consistently beat 20% returns in the market to come out ahead, which isn't realistic. Pay that down first.</p>
+      <p>Once both of those are handled, money beyond that is what's actually ready to invest.</p>
+    `,
+  },
+  {
+    title: "The accounts: where your money actually sits",
+    body: `
+      <ul>
+        <li><strong>401(k)</strong> — a retirement account through your employer. If they "match" contributions (e.g., they add 50¢ for every $1 you put in, up to some %), that match is free money — contribute at least enough to get the full match before anything else. Money grows tax-deferred; you pay income tax when you withdraw in retirement.</li>
+        <li><strong>IRA (Individual Retirement Account)</strong> — like a 401(k) but you open it yourself, not through an employer. Same tax-deferred idea, more control over what you invest in.</li>
+        <li><strong>Roth IRA</strong> — you pay tax on the money now, then it grows completely tax-free forever, including withdrawals in retirement. Usually the better choice if you expect to be in a similar or higher tax bracket later, or you're early in your career.</li>
+        <li><strong>Brokerage account</strong> — a regular, no-restrictions investing account. No tax advantages, but no rules about when you can withdraw either.</li>
+      </ul>
+      <p>A common order of operations: 401(k) match → pay off high-interest debt → max out a Roth IRA if eligible → back to 401(k) → taxable brokerage account with whatever's left.</p>
+    `,
+  },
+  {
+    title: "How much risk is actually right for you?",
+    body: `
+      <p>Two questions decide this more than anything else: <strong>when do you need the money</strong>, and <strong>how would you actually react</strong> if it dropped 30% in a bad year (it will, eventually, at some point).</p>
+      <p>Money you need in the next 1–3 years (a house down payment, a wedding) generally shouldn't be in stocks at all — too short a timeframe to recover from a downturn. Money you won't touch for 10+ years (retirement, a young kid's future) can afford to ride out volatility for a shot at higher long-run growth.</p>
+      <p>There's no universally "right" amount of risk — a common starting heuristic some people use is roughly "110 minus your age" as the percentage in stocks, the rest in bonds/cash, but this is a rough starting point to discuss with a real advisor for your situation, not a formula to follow blindly.</p>
+    `,
+  },
+  {
+    title: "Diversification — the closest thing to a free lunch",
+    body: `
+      <p>Putting all your money in one stock means your entire financial future depends on one company's decisions, competitors, lawsuits, and luck. <strong>Diversification</strong> means spreading money across many companies (and often many countries, sectors, and asset types) so no single thing going wrong can seriously hurt you.</p>
+      <p>The easiest way to diversify instantly: an <strong>index fund</strong> or <strong>ETF</strong> that holds hundreds or thousands of companies at once, for a tiny annual fee. This is how most people build real wealth without picking individual stocks — not exciting, historically effective.</p>
+    `,
+  },
+  {
+    title: "Mistakes that cost people the most money",
+    body: `
+      <ul>
+        <li><strong>Trying to time the market.</strong> Selling when scared, buying when excited — historically, the average investor badly underperforms the market itself because of this exact pattern.</li>
+        <li><strong>Chasing what's already hot.</strong> By the time something is all over the news, a lot of the gain has often already happened.</li>
+        <li><strong>Not diversifying</strong> because one stock feels exciting or familiar (your employer's stock is a very common version of this).</li>
+        <li><strong>Ignoring fees.</strong> A 1% annual fee sounds tiny but compounds into a genuinely large chunk of your returns over decades. Index funds with expense ratios under 0.1% exist for a reason.</li>
+        <li><strong>Investing money you need soon.</strong> Rent money, emergency funds, and next month's bills don't belong in the market.</li>
+      </ul>
+    `,
+  },
+  {
+    title: "What Cardinal Personal actually does once you're ready",
+    body: `
+      <p>Connect a real account so everything is grounded in your actual money, not a hypothetical. From there, a 10-role research desk — Equity Research, Risk, Tax, and more — reviews your real holdings and explains what it sees, in plain language, every time. Deterministic math (like tax-loss harvesting checks) is always labeled separately from AI judgment calls, so you always know which is which.</p>
+      <p>Nothing ever places a trade. Every decision — what to buy, what to sell, how much — stays yours. The job here is making sure you actually understand what you're looking at before you decide.</p>
+    `,
+  },
+];
+
+function renderGuide() {
+  document.getElementById('guideView').innerHTML = GUIDE.map((g, i) => `
+    <div class="guide-section${i === 0 ? ' open' : ''}">
+      <div class="guide-head">
+        <div class="guide-num">${i + 1}</div>
+        <div class="guide-title">${g.title}</div>
+        <div class="guide-chevron">▾</div>
+      </div>
+      <div class="guide-body">${g.body}</div>
+    </div>
+  `).join('');
+}
+document.getElementById('guideView').addEventListener('click', (e) => {
+  const head = e.target.closest('.guide-head');
+  if (!head) return;
+  head.closest('.guide-section').classList.toggle('open');
+});
+
+const GLOSSARY = [
+  { term: 'Stock', tag: 'Basics', def: 'A small ownership share in a company. Own a stock, and you own a tiny slice of that business — its profits, its risks, its future.' },
+  { term: 'Bond', tag: 'Basics', def: 'A loan you make to a company or government. They pay you interest over time and return your money at a set date. Generally lower risk, lower return than stocks.' },
+  { term: 'ETF (Exchange-Traded Fund)', tag: 'Basics', def: 'A basket of many stocks or bonds bundled into one thing you can buy like a single stock. An easy way to own hundreds of companies at once.' },
+  { term: 'Mutual Fund', tag: 'Basics', def: 'Similar to an ETF — a bundle of many investments in one — but traded only once a day at a set price, usually bought directly through a fund company or 401(k).' },
+  { term: 'Index Fund', tag: 'Basics', def: 'An ETF or mutual fund that simply holds everything in a market index (like the S&P 500) rather than trying to pick winners. Historically hard to beat, very low fees.' },
+  { term: 'Diversification', tag: 'Risk', def: 'Spreading money across many different investments so no single one failing can seriously hurt you. The opposite of "all your eggs in one basket."' },
+  { term: 'Asset Allocation', tag: 'Risk', def: `How your money is split across categories — stocks vs. bonds vs. cash, for example. The single biggest driver of your portfolio's risk level.` },
+  { term: 'Market Cap', tag: 'Analysis', def: `A company's total value: share price × number of shares outstanding. "Large-cap" companies are generally more established and stable than "small-cap" ones.` },
+  { term: 'P/E Ratio (Price-to-Earnings)', tag: 'Analysis', def: `Share price divided by the company's annual profit per share. A rough measure of how expensive a stock is relative to what it actually earns — higher usually means the market expects faster future growth.` },
+  { term: 'Dividend', tag: 'Basics', def: 'A cash payment some companies make to shareholders, usually quarterly, as a way of sharing profits directly instead of only through the stock price going up.' },
+  { term: 'Dividend Yield', tag: 'Analysis', def: 'Annual dividend payments divided by the current share price, as a percentage — lets you compare "how much cash income" different stocks pay relative to their price.' },
+  { term: 'Expense Ratio', tag: 'Basics', def: 'The annual fee a fund charges, as a percentage of your investment. Sounds small (often 0.03%–1%+) but compounds into real money over decades — lower is generally better, all else equal.' },
+  { term: 'Dollar-Cost Averaging', tag: 'Basics', def: 'Investing a fixed amount on a regular schedule (like every paycheck) instead of one lump sum — smooths out the ups and downs of trying to time when to buy.' },
+  { term: 'Compound Interest', tag: 'Basics', def: 'Growth on top of previous growth. $100 growing 10% becomes $110, then that $110 growing 10% becomes $121 — the gains themselves start earning too. The core reason starting early matters so much.' },
+  { term: 'Bull Market', tag: 'Basics', def: 'A sustained period of rising prices and investor optimism.' },
+  { term: 'Bear Market', tag: 'Basics', def: 'A sustained period of falling prices (typically defined as a 20%+ drop from a recent high) and investor pessimism. Uncomfortable, and historically always eventually ended.' },
+  { term: 'Volatility', tag: 'Risk', def: 'How much and how fast a price moves up and down. High volatility means bigger swings in both directions, not just downside.' },
+  { term: '401(k)', tag: 'Accounts', def: 'An employer-sponsored retirement account, often with a company "match" (free money for contributing). Money grows tax-deferred until you withdraw it in retirement.' },
+  { term: 'IRA (Individual Retirement Account)', tag: 'Accounts', def: 'A retirement account you open yourself, independent of an employer, with tax advantages similar to a 401(k).' },
+  { term: 'Roth IRA', tag: 'Accounts', def: 'An IRA where you pay tax on contributions now, in exchange for completely tax-free growth and withdrawals in retirement.' },
+  { term: 'Brokerage Account', tag: 'Accounts', def: 'A regular investing account with no tax advantages and no restrictions on withdrawals — the most flexible account type.' },
+  { term: 'Capital Gains', tag: 'Basics', def: 'Profit from selling an investment for more than you paid. "Short-term" (held under a year) is taxed higher than "long-term" (held over a year) in the U.S.' },
+  { term: 'Cost Basis', tag: 'Basics', def: 'What you originally paid for an investment. Used to calculate your actual gain or loss when you eventually sell.' },
+  { term: 'Unrealized Gain/Loss', tag: 'Basics', def: `The profit or loss on an investment you still own but haven't sold yet — it only becomes "real" (and taxable) once you actually sell.` },
+  { term: 'Ticker Symbol', tag: 'Basics', def: 'The short letter code a stock trades under — AAPL for Apple, NVDA for Nvidia, and so on.' },
+  { term: 'Blue Chip Stock', tag: 'Basics', def: 'Shares in a large, well-established, financially stable company with a long track record — generally considered lower-risk than a young or unproven company.' },
+  { term: 'Growth Stock', tag: 'Basics', def: 'A company expected to grow revenue/profits faster than average, often reinvesting profits instead of paying dividends. Usually higher risk, higher potential reward.' },
+  { term: 'Value Stock', tag: 'Basics', def: 'A stock that looks cheap relative to its actual earnings/assets — the bet is that the market is underpricing it and will eventually catch up.' },
+  { term: 'Rebalancing', tag: 'Risk', def: 'Periodically adjusting your holdings back to your target mix (e.g., selling some winners, buying more of what lagged) to keep your risk level where you intended.' },
+  { term: 'Emergency Fund', tag: 'Basics', def: '3–6 months of living expenses kept in cash, not invested — the buffer that keeps a bad month from forcing you to sell investments at a bad time.' },
+  { term: 'Risk Tolerance', tag: 'Risk', def: 'How much loss you can handle, both financially and emotionally, without panic-selling at the worst possible time.' },
+  { term: 'Concentration Risk', tag: 'Risk', def: 'The danger of having too much money in one stock, sector, or bet.' },
+  { term: 'Options', tag: 'Risk', def: 'Contracts that give the right (not obligation) to buy or sell a stock at a set price by a set date. Meaningfully higher risk than owning the stock directly.' },
+  { term: 'Wash Sale', tag: 'Basics', def: `An IRS rule: if you sell an investment at a loss and buy something "substantially identical" back within 30 days, you can't claim that loss on your taxes.` },
+];
+
+function renderGlossary(filter = '') {
+  const q = filter.trim().toLowerCase();
+  const rows = q ? GLOSSARY.filter(g => g.term.toLowerCase().includes(q) || g.def.toLowerCase().includes(q)) : GLOSSARY;
+  document.getElementById('glossaryGrid').innerHTML = rows.length ? rows.map(g => `
+    <div class="glossary-card">
+      <span class="glossary-tag">${g.tag}</span>
+      <div class="glossary-term">${g.term}</div>
+      <div class="glossary-def">${g.def}</div>
+    </div>
+  `).join('') : '<p class="empty">No terms match that search.</p>';
+}
+document.getElementById('glossarySearch').addEventListener('input', (e) => renderGlossary(e.target.value));
+
+document.querySelectorAll('.subnav [data-view]').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.subnav [data-view]').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('guideView').style.display = el.dataset.view === 'guide' ? '' : 'none';
+    document.getElementById('glossaryView').style.display = el.dataset.view === 'glossary' ? '' : 'none';
+  });
+});
+
+renderGuide();
+renderGlossary();
+</script>
+</body>
+</html>
