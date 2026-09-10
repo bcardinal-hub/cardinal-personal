@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — Cardinal Personal</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+  :root { --bg:#f8f5ee; --panel:#fff; --border:#e5dac0; --text:#211d16; --dim:#6e6656; --accent:#9c7a3c; }
+  body { background:var(--bg); color:var(--text); font:15px/1.7 'Inter',sans-serif; margin:0; }
+  h1,h2 { font-family:'Fraunces',Georgia,serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  .updated { color: var(--dim); font-size: 12.5px; margin-bottom: 30px; }
+  .draft-notice {
+    background: rgba(156,122,60,0.08); border: 1px solid rgba(156,122,60,0.3); border-radius: 12px;
+    padding: 16px 20px; font-size: 13px; color: #7a5f2c; margin-bottom: 32px; line-height: 1.6;
+  }
+  h2 { font-size: 18px; margin: 32px 0 10px; }
+  p, li { color: var(--dim); font-size: 14px; line-height: 1.75; }
+  a { color: var(--accent); }
+  .back { display: inline-block; margin-bottom: 20px; font-size: 13px; color: var(--dim); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Cardinal Personal</a>
+  <h1>Privacy Policy</h1>
+  <div class="updated">Draft — last updated September 2026</div>
+  <div class="draft-notice">⚑ This is a working draft, not yet reviewed by an attorney. It describes current, real data practices accurately, but should not be treated as final or legally binding until reviewed by counsel.</div>
+
+  <h2>What we collect</h2>
+  <p>When you use Cardinal Personal, we collect: your email address and password (hashed, never stored in plain text); investment holdings data (ticker, quantity, market value, cost basis) synced from accounts you connect; and usage data like AI chat messages and recommendation history within the app.</p>
+
+  <h2>What we don't collect</h2>
+  <p>We never receive or store your bank or brokerage login credentials. When you connect an account via Plaid or Schwab, their systems handle authentication directly and hand us back a read-only access token — not your username or password.</p>
+
+  <h2>How we use it</h2>
+  <p>Holdings data is used to generate the analysis you see in the app (via the Anthropic Claude API, called server-side) and to display your positions, allocation, and history. We do not sell your data to third parties. We do not use your financial data to train AI models beyond the scope of generating your own analysis in your own session.</p>
+
+  <h2>Third parties we share data with</h2>
+  <ul>
+    <li><strong>Plaid</strong> and <strong>Charles Schwab</strong> — to sync your investment holdings (read-only)</li>
+    <li><strong>Anthropic</strong> — to generate AI analysis of your holdings (your holdings data is sent as part of the request; Anthropic's own data handling terms apply to that processing)</li>
+    <li><strong>Finnhub</strong> — for live market quotes and news (no personal data shared, only ticker symbols)</li>
+    <li><strong>Stripe</strong> — to process subscription payments (we never see or store your full card number)</li>
+    <li><strong>Neon</strong> (our database host) and <strong>Render</strong> (our application host) — infrastructure providers that store/process data on our behalf</li>
+  </ul>
+
+  <h2>Data security</h2>
+  <p>Account connection tokens are encrypted at rest (AES-256-GCM). Passwords are hashed with bcrypt. All traffic is encrypted in transit (HTTPS). Sessions are stored server-side, not in client-readable cookies.</p>
+
+  <h2>Data deletion</h2>
+  <p>You can disconnect a linked account at any time from within the app. To request full account deletion, contact us at the email below — we will delete your account, holdings, recommendations, and chat history from our database.</p>
+
+  <h2>Your rights</h2>
+  <p>You can request a copy of your data or request deletion at any time. If you're in a jurisdiction with specific data-rights laws (e.g., GDPR, CCPA), those rights apply to you as provided by law.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes materially, we'll update the date at the top of this page.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy or your data: [add contact email here].</p>
+</div>
+</body>
+</html>
