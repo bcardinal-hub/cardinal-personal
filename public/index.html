@@ -422,6 +422,8 @@ const STEPS = [
 let current = 'auth';
 let busy = false;
 let creds = { email: '', password: '' };
+let authNotice = '';   // one-time success message on the sign-in screen
+let verifyNotice = ''; // one-time success message on the code screen
 const out = document.getElementById('out');
 
 function log(label, data) {
@@ -429,7 +431,7 @@ function log(label, data) {
 }
 
 function renderStepper() {
-  const idx = STEPS.findIndex(s => s.id === current);
+  const idx = STEPS.findIndex(s => s.id === (current === 'verify' ? 'auth' : current));
   document.getElementById('stepper').innerHTML = STEPS.map((s, i) => `
     <div class="step-node ${i < idx ? 'done' : i === idx ? 'active' : ''}">
       <div class="step-line"></div>
@@ -443,6 +445,14 @@ function banner(msg) {
   return msg ? `<div class="banner error" style="display:block">${msg}</div>` : '';
 }
 
+function notice(msg) {
+  return msg ? `<div class="banner" style="display:block;background:#ecfdf3;color:#065f46;border:1px solid #a7f3d0">${msg}</div>` : '';
+}
+
+function escapeText(s) {
+  return String(s || '').replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+}
+
 function renderStage(errorMsg) {
   const stage = document.getElementById('stage');
   const spinner = '<span class="spinner"></span>';
@@ -452,6 +462,7 @@ function renderStage(errorMsg) {
       <p class="eyebrow">Step 1 of 3</p>
       <h2>Sign in</h2>
       <p class="desc">A Cardinal Finance AI account only — separate from your bank or brokerage login.</p>
+      ${notice(authNotice)}
       ${banner(errorMsg)}
       <input id="email" placeholder="email" autocomplete="username" value="${creds.email}" />
       <input id="password" type="password" placeholder="password" autocomplete="current-password" />
@@ -473,6 +484,23 @@ function renderStage(errorMsg) {
       <button class="btn" id="forgotBtn" onclick="doForgotPassword()">Send reset link</button>
       <div class="link-row"><span class="link" onclick="current='auth'; renderStage();">Back to sign in</span></div>
     `;
+    return;
+  }
+
+  if (current === 'verify') {
+    stage.innerHTML = `
+      <p class="eyebrow">Step 1 of 3</p>
+      <h2>Check your email</h2>
+      <p class="desc">We sent a 6-digit sign-in code to <strong>${escapeText(creds.email) || 'your email'}</strong>. It expires in 10 minutes.</p>
+      ${notice(verifyNotice)}
+      ${banner(errorMsg)}
+      <input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" onkeydown="if (event.key === 'Enter') doVerifyCode()" />
+      <button class="btn" id="verifyBtn" onclick="doVerifyCode()">Verify & sign in</button>
+      <div class="link-row"><span class="link" onclick="doResendCode()">Send a new code</span></div>
+      <div class="link-row"><span class="link" onclick="signOut()">Use a different account</span></div>
+    `;
+    verifyNotice = '';
+    document.getElementById('loginCode').focus();
     return;
   }
 
@@ -580,12 +608,62 @@ async function doAuth(path) {
     log(`POST ${path}`, j);
     if (!r.ok) { busy = false; renderStage(j.error || 'Something went wrong.'); return; }
     creds.email = email;
+    authNotice = '';
+    if (j.codeRequired) { busy = false; current = 'verify'; renderStepper(); renderStage(); return; }
     await refreshState();
   } catch (e) {
     busy = false;
     renderStage('Could not reach the server: ' + e.message);
   }
   busy = false;
+}
+
+// An expired/missing pending sign-in means starting over from the password.
+function backToSignIn(msg) {
+  current = 'auth';
+  renderStepper();
+  renderStage(msg);
+}
+
+async function doVerifyCode() {
+  if (busy) return;
+  busy = true;
+  const code = document.getElementById('loginCode').value.trim();
+  setButtonLoading('verifyBtn', 'Verifying…');
+  try {
+    const r = await fetch('/auth/verify-code', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+    });
+    const j = await r.json();
+    busy = false;
+    if (!r.ok) {
+      if (/log in again/.test(j.error || '')) return backToSignIn(j.error);
+      return renderStage(j.error || 'Something went wrong.');
+    }
+    await refreshState();
+  } catch (e) {
+    busy = false;
+    renderStage('Could not reach the server: ' + e.message);
+  }
+}
+
+async function doResendCode() {
+  if (busy) return;
+  busy = true;
+  try {
+    const r = await fetch('/auth/resend-code', { method: 'POST' });
+    const j = await r.json();
+    busy = false;
+    if (!r.ok) {
+      if (/log in again/.test(j.error || '')) return backToSignIn(j.error);
+      return renderStage(j.error || 'Something went wrong.');
+    }
+    verifyNotice = 'New code sent — use the newest email.';
+    renderStage();
+  } catch (e) {
+    busy = false;
+    renderStage('Could not reach the server: ' + e.message);
+  }
 }
 
 let resetToken = null;
@@ -626,6 +704,11 @@ async function doResetPassword() {
     const j = await r.json();
     if (!r.ok) { busy = false; renderStage(j.error || 'Something went wrong.'); return; }
     resetToken = null;
+    if (j.signInRequired) {
+      busy = false;
+      authNotice = 'Password updated — sign in with your new password.';
+      return backToSignIn();
+    }
     await refreshState();
   } catch (e) {
     renderStage('Could not reach the server: ' + e.message);
@@ -668,7 +751,7 @@ async function refreshState() {
     const r = await fetch('/api/status');
     const j = await r.json();
     lastStatus = j;
-    if (!j.loggedIn) { current = 'auth'; renderStepper(); renderStage(); return; }
+    if (!j.loggedIn) { current = j.codePending ? 'verify' : 'auth'; renderStepper(); renderStage(); return; }
     if (!j.accountConnected) { current = 'connect'; renderStepper(); renderStage(); return; }
     if (!j.hasHoldings) { current = 'sync'; renderStepper(); renderStage(); return; }
     // Fully onboarded — hand off to the real dashboard.

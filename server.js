@@ -137,7 +137,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // resume the wizard at the right step on reload — including the moment
 // Schwab's OAuth redirect bounces the browser back to us.
 app.get("/api/status", async (req, res) => {
-  if (!req.session.userId) return res.json({ loggedIn: false });
+  // codePending: password passed but the emailed sign-in code hasn't been
+  // entered yet — lets a reload land back on the code screen, not sign-in.
+  if (!req.session.userId) return res.json({ loggedIn: false, codePending: Boolean(req.session.pendingUserId) });
   const [{ rows: schwab }, { rows: plaid }, { rows: holdings }] = await Promise.all([
     pool.query("SELECT 1 FROM schwab_connections WHERE user_id = $1 LIMIT 1", [req.session.userId]),
     pool.query("SELECT 1 FROM plaid_connections WHERE user_id = $1 LIMIT 1", [req.session.userId]),

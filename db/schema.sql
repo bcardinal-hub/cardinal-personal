@@ -9,6 +9,11 @@ CREATE TABLE users (
   -- A stolen DB backup shouldn't be enough to take over accounts via reset.
   reset_token_hash TEXT,
   reset_token_expires TIMESTAMPTZ,
+  -- Email sign-in code (consumer MFA, routes/auth.js). Keyed-hashed like the
+  -- reset token, never stored raw. Single-use, 10-minute expiry, 5 tries.
+  login_code_hash TEXT,
+  login_code_expires TIMESTAMPTZ,
+  login_code_attempts INTEGER DEFAULT 0,
   -- Trade Ideas preference: bias new (not-currently-held) ideas toward
   -- stocks at or under this price. NULL = no preference, use judgment.
   -- Defaults to 40 as the app's working default (not a hardcoded value in
