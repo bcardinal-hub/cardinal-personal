@@ -703,6 +703,14 @@
     </div>
 
     <div class="panel" style="margin-top:8px">
+      <div class="detail-section-head">
+        <h3 style="font-size:14px">Upcoming Earnings — Your Holdings</h3>
+        <span style="font-size:11px;color:var(--dim-2)">Real scheduled dates</span>
+      </div>
+      <div id="earningsList"><div class="skeleton skeleton-row"></div></div>
+    </div>
+
+    <div class="panel" style="margin-top:8px">
       <div class="detail-section-head" style="margin-bottom:0">
         <h3 style="font-size:14px">AI Market Take</h3>
         <button class="btn secondary" id="marketRefreshBtn" style="padding:8px 14px;font-size:12px">Refresh</button>
@@ -891,6 +899,8 @@ function activateTab(tab) {
   if (tab === 'market') {
     loadQuotes(false);
     loadSectors();
+    // Earnings dates don't change intraday — load once, don't poll it.
+    loadEarnings();
     quotePollTimer = setInterval(() => { loadQuotes(false); loadSectors(); }, 45000);
   }
   // Terminal polls faster — it's meant to feel live — and only while open.
@@ -1220,6 +1230,39 @@ async function loadSectors() {
     }).join('');
   } catch (e) {
     grid.innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
+  }
+}
+
+// Real scheduled earnings dates for held tickers — hard data from
+// Finnhub's calendar, not an agent's web-searched guess.
+const EARNINGS_HOUR_LABEL = { bmo: 'before open', amc: 'after close', dmh: 'during hours' };
+async function loadEarnings() {
+  const list = document.getElementById('earningsList');
+  try {
+    const r = await fetch('/market/earnings');
+    const j = await r.json();
+    if (!r.ok) { list.innerHTML = `<p class="empty">${j.error || 'Earnings data unavailable.'}</p>`; return; }
+    if (!j.earnings.length) {
+      list.innerHTML = '<p class="empty">No scheduled earnings in the next few months for your holdings — or no holdings synced yet.</p>';
+      return;
+    }
+    list.innerHTML = j.earnings.map(e => {
+      const when = new Date(e.date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      const soon = e.daysAway <= 14;
+      return `
+        <div class="list-row" style="margin-bottom:8px">
+          <div>
+            <div class="lr-main"><span class="ticker">${e.symbol}</span>${e.quarter ? ` · Q${e.quarter}` : ''}</div>
+            <div class="lr-sub">${when}${e.hour && EARNINGS_HOUR_LABEL[e.hour] ? ` · ${EARNINGS_HOUR_LABEL[e.hour]}` : ''}${e.epsEstimate != null ? ` · EPS est. $${Number(e.epsEstimate).toFixed(2)}` : ''}</div>
+          </div>
+          <div class="lr-value ${soon ? '' : ''}" style="${soon ? 'color:var(--accent)' : 'color:var(--dim-2)'};font-size:13px">
+            ${e.daysAway <= 0 ? 'today' : `in ${e.daysAway} day${e.daysAway === 1 ? '' : 's'}`}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<p class="empty">Could not reach the server: ${e.message}</p>`;
   }
 }
 

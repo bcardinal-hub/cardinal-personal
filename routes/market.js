@@ -1,6 +1,6 @@
 import express from "express";
 import { runMarketSnapshot } from "../lib/claude.js";
-import { INDEX_PROXIES, WATCHLIST, SECTOR_PROXIES, getQuotes, getMarketNews, getCompanyNews } from "../lib/finnhub.js";
+import { INDEX_PROXIES, WATCHLIST, SECTOR_PROXIES, getQuotes, getMarketNews, getCompanyNews, getEarningsCalendar } from "../lib/finnhub.js";
 import { requireSubscription } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
 
@@ -68,6 +68,25 @@ router.get("/sectors", async (req, res) => {
       .map((q) => ({ ...q, label: labelBySymbol[q.symbol] }))
       .sort((a, b) => b.changePct - a.changePct);
     res.json({ sectors, asOf: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Upcoming earnings dates for the tickers this person actually holds —
+// the most directly actionable thing on the Market tab, since an earnings
+// date is a known, dated event on their own money. Registered ahead of
+// the /:kind catch-all below.
+router.get("/earnings", async (req, res) => {
+  if (!process.env.FINNHUB_API_KEY) return res.status(400).json({ error: "Market data isn't configured yet (FINNHUB_API_KEY missing)." });
+  try {
+    const { rows: holdings } = await req.db.query(
+      "SELECT DISTINCT ticker FROM holdings WHERE user_id = $1",
+      [req.session.userId]
+    );
+    const symbols = holdings.map((h) => h.ticker).filter((t) => /^[A-Z.]{1,6}$/.test(t)).slice(0, 15);
+    const earnings = await getEarningsCalendar(symbols);
+    res.json({ earnings, asOf: new Date().toISOString() });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

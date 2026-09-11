@@ -6,6 +6,7 @@ import { scanForDayTradingIdeas } from "../lib/dayTradingIdeas.js";
 import { requireSubscription, requirePro } from "../lib/paywall.js";
 import { cooldown } from "../lib/cooldown.js";
 import { recordCalloutPrice, reviewDueOutcomes, getTrackRecordSummary } from "../lib/trackRecord.js";
+import { getEarningsCalendar } from "../lib/finnhub.js";
 
 const router = express.Router();
 
@@ -163,8 +164,14 @@ router.get("/personal", async (req, res) => {
 router.post("/scan/options", requirePro, optionsScanCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   try {
-    const trackRecord = await getTrackRecordSummary(req.db, req.session.userId, "Options Idea");
-    const found = await scanForOptionsIdeas(holdings, trackRecord);
+    const symbols = holdings.map((h) => h.ticker).filter((t) => /^[A-Z.]{1,6}$/.test(t)).slice(0, 15);
+    const [trackRecord, earnings] = await Promise.all([
+      getTrackRecordSummary(req.db, req.session.userId, "Options Idea"),
+      // Real earnings dates beat the model's searched ones — see
+      // lib/finnhub.js getEarningsCalendar. Never fails the scan.
+      getEarningsCalendar(symbols).catch(() => []),
+    ]);
+    const found = await scanForOptionsIdeas(holdings, trackRecord, earnings);
     const inserted = await insertOpportunities(req.db, req.session.userId, null, found, "ai");
     res.json({ ok: true, found: inserted.length, opportunities: inserted });
   } catch (e) {
