@@ -1,5 +1,5 @@
 import express from "express";
-import { createLinkToken, exchangePublicToken, getInstitutionName, getInvestmentHoldings } from "../lib/plaid.js";
+import { createLinkToken, exchangePublicToken, getInstitutionName, getInvestmentHoldings, removeItem } from "../lib/plaid.js";
 import { encryptToken, decryptToken } from "../lib/crypto.js";
 
 const router = express.Router();
@@ -68,6 +68,32 @@ router.post("/sync", async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Disconnects one linked institution: revokes the Item on Plaid's side (so
+// it stops being readable and billed), then drops our encrypted token.
+// Holdings aren't tagged per-connection, so all Plaid-sourced holdings are
+// cleared — the next sync repopulates from whatever connections remain.
+router.delete("/connections/:id", async (req, res) => {
+  const { rows } = await req.db.query(
+    "SELECT id, access_token, institution_name FROM plaid_connections WHERE id = $1 AND user_id = $2",
+    [req.params.id, req.session.userId]
+  );
+  const conn = rows[0];
+  if (!conn) return res.status(404).json({ error: "Connection not found." });
+
+  try {
+    await removeItem(decryptToken(conn.access_token));
+  } catch (e) {
+    // An Item already revoked on Plaid's side shouldn't trap the user with a
+    // connection they can't remove from our side.
+    console.error("Plaid item/remove failed on disconnect:", e.message);
+  }
+  await req.db.query("DELETE FROM plaid_connections WHERE id = $1", [conn.id]);
+  await req.db.query("DELETE FROM holdings WHERE user_id = $1 AND source = 'plaid'", [req.session.userId]);
+
+  const { rows: remaining } = await req.db.query("SELECT count(*)::int AS n FROM plaid_connections WHERE user_id = $1", [req.session.userId]);
+  res.json({ ok: true, institution_name: conn.institution_name, remaining: remaining[0].n });
 });
 
 export default router;

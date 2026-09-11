@@ -616,6 +616,10 @@
         <button class="btn" id="resyncBtn">Re-sync positions</button>
       </div>
     </div>
+    <div class="panel" id="connectionsPanel" style="display:none;margin-bottom:16px">
+      <div class="stat-label" style="margin-bottom:10px">Connected accounts</div>
+      <div id="connectionsList"></div>
+    </div>
     <div class="stats" id="posStats"></div>
     <div class="panel allocation" id="allocationPanel" style="display:none">
       <div class="stat-label" style="margin-bottom:12px">Allocation</div>
@@ -1151,6 +1155,7 @@ document.getElementById('connectPlaidBtn').addEventListener('click', async () =>
           if (!sync.ok) { toast(syncJ.error || 'Sync failed.', 'error'); return; }
           toast(syncJ.message, 'success');
           await loadPositions();
+          await loadConnections();
         } catch (e) {
           toast('Could not reach the server: ' + e.message, 'error');
         } finally {
@@ -1165,6 +1170,51 @@ document.getElementById('connectPlaidBtn').addEventListener('click', async () =>
     resetBtn(btn);
   }
 });
+
+// ---- Connected accounts (Plaid) ----
+// Built with textContent rather than innerHTML — institution names come
+// from Plaid, and nothing third-party should be able to inject markup here.
+async function loadConnections() {
+  const panel = document.getElementById('connectionsPanel');
+  const list = document.getElementById('connectionsList');
+  try {
+    const r = await fetch('/plaid/connections');
+    if (!r.ok) return;
+    const conns = await r.json();
+    list.replaceChildren();
+    panel.style.display = conns.length ? '' : 'none';
+    for (const c of conns) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border, #e5e5e5)';
+      const name = document.createElement('span');
+      name.textContent = c.institution_name || 'Linked account';
+      const btn = document.createElement('button');
+      btn.className = 'btn secondary';
+      btn.textContent = 'Disconnect';
+      btn.addEventListener('click', () => disconnectPlaid(c.id, c.institution_name || 'this account', btn));
+      row.append(name, btn);
+      list.append(row);
+    }
+  } catch { /* non-critical panel — positions still load without it */ }
+}
+
+async function disconnectPlaid(id, name, btn) {
+  if (!confirm(`Disconnect ${name}? Cardinal Finance AI will lose read access and its synced positions will be removed.`)) return;
+  setBtnLoading(btn, 'Disconnecting…');
+  try {
+    const r = await fetch('/plaid/connections/' + encodeURIComponent(id), { method: 'DELETE' });
+    const j = await r.json();
+    if (!r.ok) { toast(j.error || 'Could not disconnect.', 'error'); resetBtn(btn); return; }
+    toast(`Disconnected ${j.institution_name || 'account'}.`, 'success');
+    if (j.remaining > 0) await fetch('/plaid/sync', { method: 'POST' });
+    await loadPositions();
+    await loadConnections();
+  } catch (e) {
+    toast('Could not reach the server: ' + e.message, 'error');
+    resetBtn(btn);
+  }
+}
+loadConnections();
 
 // ---- Market / News snapshots ----
 async function loadSnapshot(kind, panelId) {

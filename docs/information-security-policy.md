@@ -56,8 +56,8 @@ Sessions are stored **server-side in Postgres** (`connect-pg-simple`). The brows
 ## 6. Data retention and deletion
 
 - Holdings data is retained only while the user's account exists and the connection remains linked.
-- **Users can permanently delete their entire account themselves**, at any time, from within the app (Billing → Danger Zone). This immediately removes all access tokens, synced holdings, recommendations, and account records from the database. No support request, no waiting period, no retention of a shadow copy.
-- Disconnecting an institution removes the associated access token.
+- **Users can permanently delete their entire account themselves**, at any time, from within the app (Billing → Danger Zone). This revokes every linked Plaid connection on Plaid's side (`/item/remove`), cancels any active subscription, and immediately removes all access tokens, synced holdings, recommendations, and account records from the database. No support request, no waiting period, no retention of a shadow copy.
+- Users can disconnect any individual linked institution from the Positions tab. This revokes the connection on Plaid's side (`/item/remove`) — so the account is no longer readable by us at all, not merely forgotten locally — and deletes our encrypted copy of the access token and the synced holdings.
 - We do not sell user data, and we do not share it with any party other than the service providers listed in Section 7, each of which receives only what it needs to perform its function.
 
 ## 7. Third-party providers

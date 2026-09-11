@@ -457,6 +457,7 @@ function renderStage(errorMsg) {
       <input id="password" type="password" placeholder="password" autocomplete="current-password" />
       <button class="btn" id="loginBtn" onclick="doAuth('/auth/login')">Log in</button>
       <button class="btn secondary" id="signupBtn" onclick="doAuth('/auth/signup')">Create account</button>
+      <p class="desc" style="font-size:12px;margin-top:10px">By creating an account, you agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>, and consent to us storing and analyzing the account data you choose to connect.</p>
       <div class="link-row"><span class="link" onclick="current='forgot'; renderStage();">Forgot password?</span></div>
     `;
     return;

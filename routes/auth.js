@@ -2,6 +2,8 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cancelSubscriptionImmediately } from "../lib/stripe.js";
+import { removeItem } from "../lib/plaid.js";
+import { decryptToken } from "../lib/crypto.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
 import { rateLimit } from "../lib/rateLimit.js";
 import { personalRetirementOutlook } from "../lib/opportunityEngine.js";
@@ -211,6 +213,21 @@ router.post("/delete-account", async (req, res) => {
   );
   if (subRows[0]?.stripe_subscription_id) {
     await cancelSubscriptionImmediately(subRows[0].stripe_subscription_id);
+  }
+
+  // Revoke each Plaid Item on Plaid's side too — otherwise the connection
+  // stays live (and billed per Item) after our copy of the token is gone.
+  // Best-effort: an already-revoked or invalid Item shouldn't block deletion.
+  const { rows: plaidRows } = await req.db.query(
+    "SELECT access_token FROM plaid_connections WHERE user_id = $1",
+    [userId]
+  );
+  for (const conn of plaidRows) {
+    try {
+      await removeItem(decryptToken(conn.access_token));
+    } catch (e) {
+      console.error("Plaid item/remove failed during account deletion:", e.message);
+    }
   }
 
   // Every user-owned table has ON DELETE CASCADE back to users (see
