@@ -1,0 +1,13 @@
+# Weekly dependency update PRs, so vulnerable packages get flagged and
+# patched without anyone having to remember to run npm audit.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Patch/minor bumps in one PR instead of one per package.
+      minor-and-patch:
+        update-types: ["minor", "patch"]
