@@ -2,9 +2,14 @@
 
 Plaid's Production application is submitted through your own Plaid dashboard (dashboard.plaid.com → your app → request Production access) — I can't submit it for you since it requires your business verification details and dashboard login, but here's every piece of written content pre-drafted so the actual submission is copy-paste.
 
-## Before you submit: one hard blocker
+## Before you submit: blocker status
 
-Plaid's application requires a **live, working Privacy Policy URL**. Cardinal Finance AI doesn't have one published yet — this is the same gap flagged in the [compliance research memo](./compliance-research-memo.md). **A Privacy Policy needs to exist at a real URL (e.g., `cardinal-personal.onrender.com/privacy.html`) before you submit this application**, or Plaid will reject it outright. Ideally this comes out of the same attorney engagement as the ToS — ask me to draft a starting version if you want something in place sooner, but flag it as attorney-reviewed-pending, same as the ToS.
+**CLEARED.** Plaid's application requires a live, working Privacy Policy URL. This now exists and returns 200:
+
+- Privacy Policy: `https://cardinal-personal.onrender.com/privacy.html`
+- Terms of Service: `https://cardinal-personal.onrender.com/terms.html`
+
+Both are still pending attorney review (see the [compliance research memo](./compliance-research-memo.md)), which remains a real open item — but the Privacy Policy is written as a binding description of actual current practice, which is what Plaid's reviewer needs it to be. Note the earlier version carried a banner saying it "should not be treated as final or legally binding"; that was removed specifically because a privacy policy that declares itself non-binding gives a Plaid reviewer a clean reason to reject. The page is still honest that formal legal review hasn't happened — it just no longer nullifies its own commitments.
 
 ## Application field content (copy-paste ready)
 
