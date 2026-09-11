@@ -1017,7 +1017,7 @@ async function loadPositions() {
   }
 
   const wrap = document.getElementById('posTableWrap');
-  if (!rows.length) { wrap.innerHTML = '<p class="empty">No holdings synced yet.</p>'; return; }
+  if (!rows.length) { wrap.innerHTML = '<p class="empty">No investments connected yet. Use <strong>+ Connect account</strong> above when you have one — or start with <a href="#learn" onclick="activateTab(\'learn\')">Learn to Invest</a>.</p>'; return; }
   wrap.innerHTML = `
     <table>
       <thead><tr><th>Ticker</th><th class="num">Quantity</th><th class="num">Market Value</th><th class="num">% Portfolio</th><th class="num">Today</th><th class="num">Cost Basis</th><th class="num">Synced</th></tr></thead>
@@ -2453,6 +2453,27 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 
+// Shown on Learn for anyone with nothing connected yet — including people
+// who don't invest at all yet, who are exactly who this app is for.
+function showNewInvestorWelcome() {
+  const learn = document.getElementById('tab-learn');
+  if (!learn || document.getElementById('newInvestorWelcome')) return;
+  const html = `
+    <div class="panel" id="newInvestorWelcome" style="margin-bottom:16px">
+      <div class="stat-label" style="margin-bottom:6px">Start here</div>
+      <h2 style="margin:0 0 6px">Never invested? You're in the right place.</h2>
+      <p style="margin:0 0 12px">You don't need a brokerage account to use Cardinal Finance AI. Start with the guide below — it explains what investing is and how people usually get started, in plain language. Ask the AI Assistant about anything that doesn't make sense. When you open an investment account later, connect it and the research desk will analyze what you actually own.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="document.getElementById('learnGuide').scrollIntoView({ behavior: 'smooth' })">Start the guide</button>
+        <button class="btn secondary" onclick="activateTab('assistant')">Ask the AI a question</button>
+        <button class="btn secondary" onclick="activateTab('positions')">Connect an account</button>
+      </div>
+    </div>`;
+  const topbar = learn.querySelector('.topbar');
+  if (topbar) topbar.insertAdjacentHTML('afterend', html);
+  else learn.insertAdjacentHTML('afterbegin', html);
+}
+
 // ---- Boot ----
 let appStatus = {};
 (async function boot() {
@@ -2460,13 +2481,20 @@ let appStatus = {};
     const r = await fetch('/api/status');
     const j = await r.json();
     appStatus = j;
-    if (!j.loggedIn || !j.accountConnected || !j.hasHoldings) { location.href = '/'; return; }
+    // Only sign-in is required. Someone with no investments yet — the
+    // person with money sitting in checking this app exists for — gets the
+    // full app (Learn, Assistant, Market) instead of being bounced back to
+    // the connect step forever.
+    if (!j.loggedIn) { location.href = '/'; return; }
   } catch {
     location.href = '/';
     return;
   }
-  const initial = location.hash.replace('#', '') || 'positions';
-  activateTab(['positions', 'market', 'news', 'assistant', 'recommendations', 'opportunities', 'clients', 'billing'].includes(initial) ? initial : 'positions');
+  if (!appStatus.hasHoldings) showNewInvestorWelcome();
+  const TABS = ['learn', 'positions', 'terminal', 'market', 'news', 'assistant', 'recommendations', 'opportunities', 'clients', 'billing'];
+  const fallback = appStatus.hasHoldings ? 'positions' : 'learn';
+  const initial = location.hash.replace('#', '') || fallback;
+  activateTab(TABS.includes(initial) ? initial : fallback);
 
   // Stripe redirects back here after Checkout with ?billing=success/cancelled
   const billingResult = new URLSearchParams(location.search).get('billing');

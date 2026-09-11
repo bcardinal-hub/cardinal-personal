@@ -24,7 +24,7 @@ const analysisCooldown = cooldown({
 router.post("/run", requireSubscription, analysisCooldown, async (req, res) => {
   const { rows: holdings } = await req.db.query("SELECT * FROM holdings WHERE user_id = $1", [req.session.userId]);
   if (holdings.length === 0) {
-    return res.status(400).json({ error: "No holdings on file yet — run /schwab/sync first." });
+    return res.status(400).json({ error: "No investments connected yet — connect an account on the Positions tab, then run the desk. New to investing? Start with Learn to Invest." });
   }
 
   // Agents are independent of each other (each is its own Claude call, some

@@ -523,6 +523,7 @@ function renderStage(errorMsg) {
       <p class="desc">Link your bank or brokerage — this app never sees your login credentials, only a read-only token handed back by your institution.</p>
       ${banner(errorMsg)}
       <button class="btn" id="plaidBtn" onclick="doPlaidConnect()">Connect bank or brokerage →</button>
+      <div class="link-row"><span class="link" onclick="skipToApp()">Don't invest yet? Skip for now — explore the app →</span></div>
       <div class="link-row"><span class="link" onclick="doSchwabConnect()">Have your own Schwab developer app instead?</span></div>
       <div class="link-row"><span class="link" onclick="signOut()">Sign out</span></div>
       <div class="safety">🔒 Read-only access. No route in this app can place, modify, or cancel a trade.</div>
@@ -537,9 +538,18 @@ function renderStage(errorMsg) {
       <p class="desc">Your account is connected. Pull your current holdings, then head into your dashboard.</p>
       ${banner(errorMsg)}
       <button class="btn" id="syncBtn" onclick="doSync()">Sync positions →</button>
+      <div class="link-row"><span class="link" onclick="skipToApp()">Skip for now — go to the app →</span></div>
     `;
     return;
   }
+}
+
+// Lets someone with no investments yet into the app. Remembered in this
+// browser so they aren't walked back through the connect step every login;
+// they can still connect any time from the Positions tab.
+function skipToApp() {
+  localStorage.setItem('cfai_skip_connect', '1');
+  location.href = '/dashboard.html';
 }
 
 async function doPlaidConnect() {
@@ -752,8 +762,9 @@ async function refreshState() {
     const j = await r.json();
     lastStatus = j;
     if (!j.loggedIn) { current = j.codePending ? 'verify' : 'auth'; renderStepper(); renderStage(); return; }
-    if (!j.accountConnected) { current = 'connect'; renderStepper(); renderStage(); return; }
-    if (!j.hasHoldings) { current = 'sync'; renderStepper(); renderStage(); return; }
+    const skipped = localStorage.getItem('cfai_skip_connect') === '1';
+    if (!j.accountConnected && !skipped) { current = 'connect'; renderStepper(); renderStage(); return; }
+    if (j.accountConnected && !j.hasHoldings && !skipped) { current = 'sync'; renderStepper(); renderStage(); return; }
     // Fully onboarded — hand off to the real dashboard.
     location.href = '/dashboard.html';
   } catch {
