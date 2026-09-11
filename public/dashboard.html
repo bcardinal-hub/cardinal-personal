@@ -546,6 +546,7 @@
   .learn-hero p { font-size: 13.5px; color: rgba(255,255,255,0.78); line-height: 1.65; margin: 0; max-width: 640px; }
 </style>
 <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script src="planner.js"></script>
 </head>
 <body>
 
@@ -596,10 +597,13 @@
     </div>
     <div class="learn-subnav">
       <span class="filter-chip active" data-learnview="guide">Getting Started</span>
+      <span class="filter-chip" data-learnview="planner">Budget &amp; Cash Plan</span>
       <span class="filter-chip" data-learnview="glossary">Glossary</span>
     </div>
 
     <div id="learnGuide"></div>
+
+    <div id="learnPlanner" style="display:none"></div>
 
     <div id="learnGlossary" style="display:none">
       <input class="learn-search" id="glossarySearch" placeholder="Search a term — try 'index fund' or 'P/E'…" autocomplete="off" />
@@ -1732,7 +1736,9 @@ document.querySelectorAll('.learn-subnav [data-learnview]').forEach(el => {
     el.classList.add('active');
     const view = el.dataset.learnview;
     document.getElementById('learnGuide').style.display = view === 'guide' ? '' : 'none';
+    document.getElementById('learnPlanner').style.display = view === 'planner' ? '' : 'none';
     document.getElementById('learnGlossary').style.display = view === 'glossary' ? '' : 'none';
+    if (view === 'planner') mountMoneyPlanner(document.getElementById('learnPlanner'));
   });
 });
 
@@ -2465,6 +2471,7 @@ function showNewInvestorWelcome() {
       <p style="margin:0 0 12px">You don't need a brokerage account to use Cardinal Finance AI. Start with the guide below — it explains what investing is and how people usually get started, in plain language. Ask the AI Assistant about anything that doesn't make sense. When you open an investment account later, connect it and the research desk will analyze what you actually own.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" onclick="document.getElementById('learnGuide').scrollIntoView({ behavior: 'smooth' })">Start the guide</button>
+        <button class="btn secondary" onclick="document.querySelector('.learn-subnav [data-learnview=planner]').click()">Build a budget &amp; cash plan</button>
         <button class="btn secondary" onclick="activateTab('assistant')">Ask the AI a question</button>
         <button class="btn secondary" onclick="activateTab('positions')">Connect an account</button>
       </div>

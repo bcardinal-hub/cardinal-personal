@@ -128,10 +128,12 @@
 
   <div class="subnav">
     <span class="filter-chip active" data-view="guide">Getting Started</span>
+    <span class="filter-chip" data-view="planner">Budget &amp; Cash Plan</span>
     <span class="filter-chip" data-view="glossary">Glossary</span>
   </div>
 
   <div id="guideView"></div>
+  <div id="plannerView" style="display:none"></div>
   <div id="glossaryView" style="display:none">
     <input class="learn-search" id="glossarySearch" placeholder="Search a term — try 'index fund' or 'P/E'…" autocomplete="off" />
     <div class="glossary-grid" id="glossaryGrid"></div>
@@ -146,6 +148,7 @@
 
 <footer>Cardinal Finance AI never places a trade. Every decision stays yours.<br/><a href="/terms.html" style="color:var(--dim-2)">Terms</a> · <a href="/privacy.html" style="color:var(--dim-2)">Privacy</a></footer>
 
+<script src="planner.js"></script>
 <script>
 const GUIDE = [
   {
@@ -300,17 +303,24 @@ function renderGlossary(filter = '') {
 }
 document.getElementById('glossarySearch').addEventListener('input', (e) => renderGlossary(e.target.value));
 
+function showView(view) {
+  document.querySelectorAll('.subnav [data-view]').forEach(c => c.classList.toggle('active', c.dataset.view === view));
+  document.getElementById('guideView').style.display = view === 'guide' ? '' : 'none';
+  document.getElementById('plannerView').style.display = view === 'planner' ? '' : 'none';
+  document.getElementById('glossaryView').style.display = view === 'glossary' ? '' : 'none';
+  if (view === 'planner') mountMoneyPlanner(document.getElementById('plannerView'));
+}
 document.querySelectorAll('.subnav [data-view]').forEach(el => {
   el.addEventListener('click', () => {
-    document.querySelectorAll('.subnav [data-view]').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('guideView').style.display = el.dataset.view === 'guide' ? '' : 'none';
-    document.getElementById('glossaryView').style.display = el.dataset.view === 'glossary' ? '' : 'none';
+    showView(el.dataset.view);
+    history.replaceState(null, '', el.dataset.view === 'guide' ? location.pathname : '#' + el.dataset.view);
   });
 });
 
 renderGuide();
 renderGlossary();
+// Shareable deep link: /learn.html#planner opens the budget tool directly.
+if (['planner', 'glossary'].includes(location.hash.slice(1))) showView(location.hash.slice(1));
 </script>
 </body>
 </html>
