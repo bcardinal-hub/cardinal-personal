@@ -71,7 +71,7 @@ Add both prices to the *same* product (use "Add another price"), not two separat
 Still in live mode: Developers → Webhooks → **Add endpoint**. Same as the one you set up in test mode:
 
 - **Endpoint URL:** `https://cardinal-personal.onrender.com/billing/webhook`
-- **Events:** `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- **Events:** `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` — the handler in [routes/billing.js](../routes/billing.js) acts only on `customer.subscription.*`, so nothing else is needed
 
 Then reveal and copy the **signing secret** (`whsec_…`). This is a new, different secret from the test one.
 
